@@ -33,6 +33,8 @@ var MongoStorage = class {
   offerTileImagesCollection;
   ordersDb;
   ordersCollection;
+  posDb;
+  posSettingsCollection;
   restaurantId;
   categories = [
     // FOOD
@@ -114,6 +116,8 @@ var MongoStorage = class {
     this.offerTileImagesCollection = this.menuPageDb.collection("offertileimages");
     this.ordersDb = this.client.db("Orders");
     this.ordersCollection = this.ordersDb.collection("orders");
+    this.posDb = this.client.db("POS");
+    this.posSettingsCollection = this.posDb.collection("settings");
     this.restaurantId = new ObjectId("6874cff2a880250859286de6");
   }
   async connect() {
@@ -622,6 +626,17 @@ var MongoStorage = class {
   async fixVegNonVegClassification() {
     return { updated: 0, details: [] };
   }
+  async getPosSettings() {
+    const docs = await this.posSettingsCollection.find({}).toArray();
+    const map = {};
+    for (const doc of docs) map[doc.key] = doc.value;
+    return {
+      taxRate: parseFloat(map["tax_rate"] ?? "0"),
+      serviceCharge: parseFloat(map["service_charge"] ?? "0"),
+      gstEnabled: (map["gst_enabled"] ?? "false") === "true",
+      gstNumber: map["gst_number"] ?? ""
+    };
+  }
   sortMenuItems(items) {
     return items.sort((a, b) => {
       if (a.isVeg !== b.isVeg) return a.isVeg ? -1 : 1;
@@ -1087,6 +1102,15 @@ async function registerRoutes(app2) {
       res.json(customerOrders);
     } catch (error) {
       res.status(500).json({ message: "Failed to fetch customer orders" });
+    }
+  });
+  app2.get("/api/pos-settings", async (req, res) => {
+    try {
+      const settings = await storage.getPosSettings();
+      res.setHeader("Cache-Control", "no-store");
+      res.json(settings);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch POS settings" });
     }
   });
   app2.delete("/api/orders/by-phone/:phone", async (req, res) => {
