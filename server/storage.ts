@@ -767,10 +767,41 @@ export class MongoStorage implements IStorage {
   }
 
   async getOrdersByPhone(phone: string): Promise<Order[]> {
-    return await this.ordersCollection
+    const orders = await this.ordersCollection
       .find({ customerPhone: phone })
       .sort({ createdAt: -1 })
       .toArray();
+
+    // Auto-sync: for any pending order linked to a POS order, check if POS has completed it
+    const posOrdersCollection = this.posDb.collection("orders");
+    const pendingWithPosId = orders.filter(
+      (o: any) => o.status === "pending" && o.posOrderId
+    );
+
+    if (pendingWithPosId.length > 0) {
+      const posIds = pendingWithPosId.map((o: any) => o.posOrderId);
+      const posCompleted = await posOrdersCollection
+        .find({ id: { $in: posIds }, status: "completed" })
+        .project({ id: 1 })
+        .toArray();
+
+      if (posCompleted.length > 0) {
+        const completedPosIds = new Set(posCompleted.map((p: any) => p.id));
+        // Bulk-update matching Bung-le orders to completed
+        await this.ordersCollection.updateMany(
+          { customerPhone: phone, status: "pending", posOrderId: { $in: Array.from(completedPosIds) } },
+          { $set: { status: "completed" } }
+        );
+        // Reflect the update in the returned array
+        for (const order of orders as any[]) {
+          if (order.status === "pending" && completedPosIds.has(order.posOrderId)) {
+            order.status = "completed";
+          }
+        }
+      }
+    }
+
+    return orders;
   }
 
   async updateOrderStatus(id: string, status: string): Promise<Order | null> {
