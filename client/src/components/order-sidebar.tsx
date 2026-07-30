@@ -64,6 +64,7 @@ export default function OrderSidebar() {
     staleTime: 0,
     refetchOnMount: "always",
     refetchOnWindowFocus: true,
+    refetchInterval: 5000,
     gcTime: 0,
   });
 
