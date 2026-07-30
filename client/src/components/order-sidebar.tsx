@@ -4,7 +4,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { X, Minus, Plus, Trash2, CheckCircle, User, ChevronDown, ChevronUp, Clock, UtensilsCrossed, ClipboardList, StickyNote } from "lucide-react";
 import { useState } from "react";
 import { useTheme } from "@/contexts/ThemeContext";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import type { Order } from "@shared/schema";
 import { formatTableNumber } from "@/lib/table";
 import ItemNoteModal from "@/components/item-note-modal";
@@ -22,6 +22,7 @@ export default function OrderSidebar() {
   const { customer } = useCustomer();
   const { isDark } = useTheme();
   const [placing, setPlacing] = useState(false);
+  const queryClient = useQueryClient();
   const [placed, setPlaced] = useState(false);
   const [note, setNote] = useState("");
   const [profileOpen, setProfileOpen] = useState(false);
@@ -32,6 +33,22 @@ export default function OrderSidebar() {
     queryKey: ["/api/pos-settings"],
     staleTime: 0,
     refetchOnMount: "always",
+  });
+
+  // Mark an ongoing order as completed
+  const markDoneMutation = useMutation({
+    mutationFn: async (orderId: string) => {
+      const res = await fetch(`/api/orders/${orderId}/status`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status: "completed" }),
+      });
+      if (!res.ok) throw new Error("Failed to update order");
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/orders/by-phone", customer?.phone] });
+    },
   });
 
   // Fetch past orders for this customer
@@ -316,6 +333,15 @@ export default function OrderSidebar() {
                       {order.note && (
                         <p className="text-xs italic" style={{ color: "var(--bb-text-dim)" }}>Note: {order.note}</p>
                       )}
+                      {/* Mark as Done */}
+                      <button
+                        onClick={() => markDoneMutation.mutate(order._id?.toString() ?? "")}
+                        disabled={markDoneMutation.isPending}
+                        className="w-full mt-1 py-1.5 rounded-lg text-xs font-bold uppercase tracking-wide transition-opacity"
+                        style={{ background: "#22c55e22", color: "#22c55e", border: "1px solid #22c55e55", opacity: markDoneMutation.isPending ? 0.6 : 1 }}
+                      >
+                        {markDoneMutation.isPending ? "Updating…" : "✓ Mark as Done"}
+                      </button>
                     </div>
                   ))}
                 </div>

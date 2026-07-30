@@ -60,6 +60,7 @@ export interface IStorage {
   createOrder(order: InsertOrder): Promise<Order>;
   getOrders(): Promise<Order[]>;
   getOrdersByPhone(phone: string): Promise<Order[]>;
+  updateOrderStatus(id: string, status: string): Promise<Order | null>;
   deleteCompletedOrdersByPhone(phone: string): Promise<number>;
 
   getPosSettings(): Promise<{ taxRate: number; serviceCharge: number; gstEnabled: boolean; gstNumber: string }>;
@@ -770,6 +771,18 @@ export class MongoStorage implements IStorage {
       .find({ customerPhone: phone })
       .sort({ createdAt: -1 })
       .toArray();
+  }
+
+  async updateOrderStatus(id: string, status: string): Promise<Order | null> {
+    const { ObjectId } = await import("mongodb");
+    let oid: InstanceType<typeof ObjectId>;
+    try { oid = new ObjectId(id); } catch { return null; }
+    const updated = await this.ordersCollection.findOneAndUpdate(
+      { _id: oid },
+      { $set: { status } },
+      { returnDocument: "after" }
+    );
+    return updated as any ?? null;
   }
 
   async deleteCompletedOrdersByPhone(phone: string): Promise<number> {

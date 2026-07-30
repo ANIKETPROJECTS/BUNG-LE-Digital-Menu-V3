@@ -465,6 +465,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Update order status (e.g. mark as completed)
+  app.patch("/api/orders/:id/status", async (req, res) => {
+    try {
+      const { id } = req.params;
+      const { status } = req.body;
+      const validStatuses = ["pending", "confirmed", "preparing", "ready", "served", "completed", "cancelled"];
+      if (!validStatuses.includes(status)) {
+        return res.status(400).json({ message: "Invalid status" });
+      }
+      const updated = await storage.updateOrderStatus(id, status);
+      if (!updated) return res.status(404).json({ message: "Order not found" });
+      res.json(updated);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to update order status" });
+    }
+  });
+
   // Delete a customer's completed/cancelled order history (ongoing orders are preserved)
   app.delete("/api/orders/by-phone/:phone", async (req, res) => {
     try {
