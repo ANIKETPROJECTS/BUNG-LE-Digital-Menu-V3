@@ -87,7 +87,6 @@ export class MongoStorage implements IStorage {
   private welcomeScreenDb: Db;
   private menuPageDb: Db;
   private hamburgerDb: Db;
-  private categoryCollections: Map<string, Collection<MenuItem>>;
   private cartItemsCollection: Collection<CartItem>;
   private usersCollection: Collection<User>;
   private customersCollection: Collection<Customer>;
@@ -138,12 +137,6 @@ export class MongoStorage implements IStorage {
     this.welcomeScreenDb = this.client.db("welcomescreen");
     this.menuPageDb = this.client.db("menupage");
     this.hamburgerDb = this.client.db("hamburger");
-    this.categoryCollections = new Map();
-
-    this.categories.forEach(category => {
-      this.categoryCollections.set(category, this.db.collection(category));
-    });
-
     this.cartItemsCollection = this.db.collection("cartitems");
     this.usersCollection = this.db.collection("users");
     this.customersCollection = this.customersDb.collection("customers");
@@ -170,81 +163,22 @@ export class MongoStorage implements IStorage {
   async connect() {
     await this.client.connect();
 
-    // Ensure all defined collections exist
-    const existingCollections = await this.db.listCollections().toArray();
-    const existingNames = existingCollections.map(c => c.name);
-    
-    for (const category of this.categories) {
-      if (!existingNames.includes(category)) {
-        console.log(`[Storage] Creating missing collection: ${category}`);
-        await this.db.createCollection(category);
-      }
-    }
-
-    const customerCollections = await this.customersDb.listCollections().toArray();
-    const customerExistingNames = customerCollections.map(c => c.name);
-
-    if (!customerExistingNames.includes("customers")) {
-      console.log(`[Storage] Creating missing collection: customers in customersdb`);
-      await this.customersDb.createCollection("customers");
-    }
-
-    // Ensure socialsandcontact.link collection exists
-    const socialsCollections = await this.socialsDb.listCollections().toArray();
-    const socialsExistingNames = socialsCollections.map(c => c.name);
-
-    if (!socialsExistingNames.includes("link")) {
-      console.log(`[Storage] Creating missing collection: link in socialsandcontact`);
-      await this.socialsDb.createCollection("link");
-    }
-
-    // Ensure welcomescreen.welcomescreenui collection exists
-    const welcomeCollections = await this.welcomeScreenDb.listCollections().toArray();
-    const welcomeExistingNames = welcomeCollections.map(c => c.name);
-
-    if (!welcomeExistingNames.includes("welcomescreenui")) {
-      console.log(`[Storage] Creating missing collection: welcomescreenui in welcomescreen`);
-      await this.welcomeScreenDb.createCollection("welcomescreenui");
-    }
-
-    // Ensure menupage.coupons collection exists
     const menuPageCollections = await this.menuPageDb.listCollections().toArray();
     const menuPageExistingNames = menuPageCollections.map(c => c.name);
 
-    if (!menuPageExistingNames.includes("coupons")) {
-      console.log(`[Storage] Creating missing collection: coupons in menupage`);
-      await this.menuPageDb.createCollection("coupons");
-    }
-
-    // Ensure menupage.carousel collection exists and is seeded
-    if (!menuPageExistingNames.includes("carousel")) {
-      console.log(`[Storage] Creating missing collection: carousel in menupage`);
-      await this.menuPageDb.createCollection("carousel");
-    }
-
     // Migrate existing carousel documents to add visible: true if they don't have the field
-    const carouselMigrated = await this.carouselCollection.updateMany(
-      { visible: { $exists: false } },
-      { $set: { visible: true } }
-    );
-    if (carouselMigrated.modifiedCount > 0) {
-      console.log(`[Storage] Migrated ${carouselMigrated.modifiedCount} carousel documents to add visible: true`);
-    }
-
-    // Ensure menupage.logo collection exists and is seeded
-    if (!menuPageExistingNames.includes("logo")) {
-      console.log(`[Storage] Creating missing collection: logo in menupage`);
-      await this.menuPageDb.createCollection("logo");
-    }
-
-    // Ensure menupage.categories collection exists
-    if (!menuPageExistingNames.includes("categories")) {
-      console.log(`[Storage] Creating missing collection: categories in menupage`);
-      await this.menuPageDb.createCollection("categories");
+    if (menuPageExistingNames.includes("carousel")) {
+      const carouselMigrated = await this.carouselCollection.updateMany(
+        { visible: { $exists: false } },
+        { $set: { visible: true } }
+      );
+      if (carouselMigrated.modifiedCount > 0) {
+        console.log(`[Storage] Migrated ${carouselMigrated.modifiedCount} carousel documents to add visible: true`);
+      }
     }
 
     // Migrate all categories and their subcategories to add visible: true where missing
-    {
+    if (menuPageExistingNames.includes("categories")) {
       const allCats = await this.categoriesCollection.find({}).toArray();
       let migrated = 0;
       for (const cat of allCats) {
@@ -266,64 +200,22 @@ export class MongoStorage implements IStorage {
       }
     }
 
-    // Ensure menupage.callwaiter collection exists
-    if (!menuPageExistingNames.includes("callwaiter")) {
-      console.log(`[Storage] Creating missing collection: callwaiter in menupage`);
-      await this.menuPageDb.createCollection("callwaiter");
-    }
-
-    // Ensure hamburger.reservation and hamburger.paymentdetails collections exist
-    const hamburgerCollections = await this.hamburgerDb.listCollections().toArray();
-    const hamburgerExistingNames = hamburgerCollections.map(c => c.name);
-
-    if (!hamburgerExistingNames.includes("reservation")) {
-      console.log(`[Storage] Creating missing collection: reservation in hamburger`);
-      await this.hamburgerDb.createCollection("reservation");
-    }
-
-    if (!hamburgerExistingNames.includes("paymentdetails")) {
-      console.log(`[Storage] Creating missing collection: paymentdetails in hamburger`);
-      await this.hamburgerDb.createCollection("paymentdetails");
-    }
-
-    // Ensure hamburger.restaurantinfo collection exists
-    if (!hamburgerExistingNames.includes("restaurantinfo")) {
-      console.log(`[Storage] Creating missing collection: restaurantinfo in hamburger`);
-      await this.hamburgerDb.createCollection("restaurantinfo");
-    }
-
-    // Ensure smartpicks.smartpickscategorie collection exists
     const smartpicksCollections = await this.smartpicksDb.listCollections().toArray();
     const smartpicksExistingNames = smartpicksCollections.map(c => c.name);
 
-    if (!smartpicksExistingNames.includes("smartpickscategorie")) {
-      console.log(`[Storage] Creating missing collection: smartpickscategorie in smartpicks`);
-      await this.smartpicksDb.createCollection("smartpickscategorie");
-    }
-
     // Migrate existing smart picks documents: add isVisible: true if field is missing
-    await this.smartpicksCategorieCollection.updateMany(
-      { isVisible: { $exists: false } },
-      { $set: { isVisible: true } }
-    );
-
-    // Ensure menupage.offertileimages collection exists
-    if (!menuPageExistingNames.includes("offertileimages")) {
-      console.log(`[Storage] Creating missing collection: offertileimages in menupage`);
-      await this.menuPageDb.createCollection("offertileimages");
-    }
-
-    // Ensure Orders.orders collection exists
-    const ordersCollections = await this.ordersDb.listCollections().toArray();
-    const ordersExistingNames = ordersCollections.map(c => c.name);
-    if (!ordersExistingNames.includes("orders")) {
-      console.log(`[Storage] Creating missing collection: orders in Orders`);
-      await this.ordersDb.createCollection("orders");
+    if (smartpicksExistingNames.includes("smartpickscategorie")) {
+      await this.smartpicksCategorieCollection.updateMany(
+        { isVisible: { $exists: false } },
+        { $set: { isVisible: true } }
+      );
     }
 
     // Sync smart picks flags on startup and watch for live changes
     await this.syncSmartPicksFlags();
-    this.watchSmartPicksCategories();
+    if (smartpicksExistingNames.includes("smartpickscategorie")) {
+      this.watchSmartPicksCategories();
+    }
   }
 
   async getOfferTileImages(): Promise<OfferTileImages | null> {
@@ -394,7 +286,11 @@ export class MongoStorage implements IStorage {
 
     if (keysToAdd.length === 0 && keysToRemove.length === 0) return;
 
-    const allCollections = Array.from(this.categoryCollections.values());
+    // Only update collections that already exist. MongoDB's updateMany()
+    // creates a collection when its target does not exist, which previously
+    // recreated the empty legacy category collections on startup.
+    const existingCollections = await this.db.listCollections().toArray();
+    const allCollections = existingCollections.map(({ name }) => this.db.collection<MenuItem>(name));
 
     for (const col of allCollections) {
       for (const key of keysToAdd) {
@@ -642,16 +538,16 @@ export class MongoStorage implements IStorage {
   }
 
   async getMenuItem(id: string): Promise<MenuItem | undefined> {
-    const collections = Array.from(this.categoryCollections.values());
-    for (const collection of collections) {
-      const menuItem = await collection.findOne({ _id: new ObjectId(id) });
+    const collections = await this.db.listCollections().toArray();
+    for (const { name } of collections) {
+      const menuItem = await this.db.collection<MenuItem>(name).findOne({ _id: new ObjectId(id) });
       if (menuItem) return menuItem;
     }
     return undefined;
   }
 
   getCategories(): string[] {
-    return [...this.categories];
+    return [];
   }
 
   async addMenuItem(item: InsertMenuItem): Promise<MenuItem> {
@@ -841,9 +737,9 @@ export class MongoStorage implements IStorage {
   }
 
   async clearDatabase(): Promise<void> {
-    const collections = Array.from(this.categoryCollections.values());
-    for (const collection of collections) {
-      await collection.deleteMany({});
+    const collections = await this.db.listCollections().toArray();
+    for (const { name } of collections) {
+      await this.db.collection<MenuItem>(name).deleteMany({});
     }
   }
 
