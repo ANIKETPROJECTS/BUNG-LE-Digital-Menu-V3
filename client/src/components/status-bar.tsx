@@ -9,7 +9,6 @@ import type { Order } from "@shared/schema";
 // table/order status — mirrors the POS "Status / Table / Floor" bar.
 export default function StatusBar() {
   const { customer } = useCustomer();
-  const { isDark } = useTheme();
 
   const { data: orders = [] } = useQuery<Order[]>({
     queryKey: ["/api/orders/by-phone", customer?.phone],
@@ -28,55 +27,7 @@ export default function StatusBar() {
     refetchOnReconnect: true,
   });
 
-  const todayStart = new Date();
-  todayStart.setHours(0, 0, 0, 0);
-
-  const ongoing = orders
-    .filter((o) =>
-      o.status !== "completed" &&
-      o.status !== "cancelled" &&
-      new Date(o.createdAt) >= todayStart
-    )
-    .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
-  const latest = ongoing[0];
-
-  const { label, color } = getStatusDisplay(latest?.status);
-  const tableNumber = latest ? formatTableNumber(latest.tableId) : null;
-  const floorId = latest?.floorId || null;
-
-  if (!tableNumber && !floorId) return null;
-
-  return (
-    <div
-      className="flex items-center justify-center gap-3 sm:gap-5 flex-wrap px-3 py-1.5"
-      style={{
-        borderBottom: "0",
-        background: isDark ? "#0a0a0a" : "#faf7f0",
-      }}
-      data-testid="status-bar"
-    >
-      {tableNumber && (
-        <>
-          <span style={{ color: "var(--bb-border)" }}>|</span>
-          <span className="text-[11px] sm:text-xs" style={{ color: "var(--bb-text-dim)" }}>
-            Table:{" "}
-            <span className="font-semibold" style={{ color: "var(--bb-gold)" }}>
-              {tableNumber}
-            </span>
-          </span>
-        </>
-      )}
-      {floorId && (
-        <>
-          <span style={{ color: "var(--bb-border)" }}>|</span>
-          <span className="text-[11px] sm:text-xs" style={{ color: "var(--bb-text-dim)" }}>
-            Floor:{" "}
-            <span className="font-semibold" style={{ color: "var(--bb-gold)" }}>
-              {floorId}
-            </span>
-          </span>
-        </>
-      )}
-    </div>
-  );
+  // Table and floor assignments are internal restaurant details and are not
+  // shown to customers in the digital menu.
+  return null;
 }

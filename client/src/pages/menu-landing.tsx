@@ -1230,7 +1230,7 @@ export default function MenuLanding() {
                 style={{ color: "#E8D8B4" }}
                 data-testid="button-back"
               >
-                <ArrowLeft className="h-5 w-5 sm:h-6 sm:w-6" />
+                <ArrowLeft className="h-6 w-6" />
               </Button>
             </div>
 
@@ -1244,7 +1244,7 @@ export default function MenuLanding() {
                 <img
                    src="/welcome-custom-logo.png"
                   alt="Bung-le"
-                   style={{ height: "52px", width: "112px", objectFit: "contain", display: "block" }}
+                   style={{ height: "58px", width: "150px", objectFit: "contain", display: "block" }}
                   data-testid="img-logo"
                 />
               </button>
@@ -1263,9 +1263,9 @@ export default function MenuLanding() {
                 data-testid="button-menu-toggle"
               >
                 {showHamburgerMenu ? (
-                  <X className="h-7 w-7 sm:h-8 sm:w-8 md:h-6 md:w-6" />
+                   <X className="h-6 w-6" />
                 ) : (
-                  <MenuIcon className="h-7 w-7 sm:h-8 sm:w-8 md:h-6 md:w-6" />
+                   <MenuIcon className="h-6 w-6" />
                 )}
               </Button>
             </div>
