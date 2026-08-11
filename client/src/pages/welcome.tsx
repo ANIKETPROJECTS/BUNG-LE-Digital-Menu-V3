@@ -114,8 +114,8 @@ export default function Welcome() {
         aria-hidden="true"
         style={{
           background: "rgba(0, 0, 0, 0.24)",
-          backdropFilter: "blur(1.2px)",
-          WebkitBackdropFilter: "blur(1.2px)",
+          backdropFilter: "blur(0.6px)",
+          WebkitBackdropFilter: "blur(0.6px)",
         }}
       />
 
@@ -258,9 +258,7 @@ export default function Welcome() {
                 alt="Google Maps"
                 className="w-10 h-10 rounded-lg object-cover"
               />
-                <span className="text-xs font-semibold">
-                {t.locate}
-              </span>
+              <span className="text-xs font-semibold">{t.locate}</span>
             </button>
             <button
               className="flex min-w-0 flex-col items-center gap-0.5 transition-opacity hover:opacity-80"
@@ -272,9 +270,7 @@ export default function Welcome() {
                 alt="Call"
                 className="w-10 h-10 rounded-full object-cover"
               />
-                <span className="text-xs font-semibold">
-                {t.call}
-              </span>
+              <span className="text-xs font-semibold">{t.call}</span>
             </button>
             <button
               className="flex min-w-0 flex-col items-center gap-0.5 transition-opacity hover:opacity-80"
@@ -286,9 +282,7 @@ export default function Welcome() {
                 alt="WhatsApp"
                 className="w-10 h-10 rounded-xl object-cover"
               />
-                <span className="text-xs font-semibold">
-                {t.chat}
-              </span>
+              <span className="text-xs font-semibold">{t.chat}</span>
             </button>
             <button
               className="flex min-w-0 flex-col items-center gap-0.5 transition-opacity hover:opacity-80"
@@ -300,9 +294,7 @@ export default function Welcome() {
                 alt="Email"
                 className="w-10 h-10 rounded-lg object-cover"
               />
-                <span className="text-xs font-semibold">
-                {t.email}
-              </span>
+              <span className="text-xs font-semibold">{t.email}</span>
             </button>
             <button
               className="flex min-w-0 flex-col items-center gap-0.5 transition-opacity hover:opacity-80"
@@ -314,9 +306,7 @@ export default function Welcome() {
                 alt="Reservation"
                 className="w-10 h-10 rounded-xl object-contain"
               />
-                <span className="text-xs font-semibold">
-                {t.book}
-              </span>
+              <span className="text-xs font-semibold">{t.book}</span>
             </button>
           </div>
         </div>
