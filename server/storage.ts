@@ -7,6 +7,19 @@ type UpdateMenuItemFlags = {
   isAvailable?: boolean;
 };
 
+function normalizeCategory(value: string): string {
+  return value
+    .trim()
+    .toLowerCase()
+    .replace(/&/g, " and ")
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+}
+
+function categoryIdFor(title: string, fallback?: string): string {
+  return (fallback && fallback.trim()) || normalizeCategory(title);
+}
+
 export interface IStorage {
   getUser(id: string): Promise<User | undefined>;
   getUserByUsername(username: string): Promise<User | undefined>;
@@ -448,6 +461,9 @@ export class MongoStorage implements IStorage {
       .filter(sub => sub.visible !== false)
       .map(sub => ({
         ...sub,
+        // Category documents imported from the admin app may only contain a
+        // title. The customer menu needs an id to build its URL.
+        id: categoryIdFor(sub.title, sub.id),
         subcategories: this.filterVisibleSubcats(sub.subcategories || []),
       }));
   }
@@ -458,6 +474,9 @@ export class MongoStorage implements IStorage {
       .filter(cat => cat.visible !== false)
       .map(cat => ({
         ...cat,
+        // Older category records do not have an id. The customer menu uses
+        // this value for routing, so derive one from the stored title.
+        id: categoryIdFor(cat.title, cat.id),
         subcategories: this.filterVisibleSubcats(cat.subcategories || []),
       }));
   }
@@ -562,9 +581,15 @@ export class MongoStorage implements IStorage {
 
   async getMenuItems(): Promise<MenuItem[]> {
     const allMenuItems: MenuItem[] = [];
-    const collections = Array.from(this.categoryCollections.values());
-    for (const collection of collections) {
-      const items = await collection.find({}).toArray();
+    // Menu items are stored in bungle collections created by the admin app.
+    // Do not rely on the legacy hardcoded collection list: imported category
+    // names (for example "SOUP") can be arbitrary.
+    const collections = await this.db.listCollections().toArray();
+    for (const collectionInfo of collections) {
+      const items = await this.db
+        .collection<MenuItem>(collectionInfo.name)
+        .find({ category: { $exists: true } })
+        .toArray();
       allMenuItems.push(...items);
     }
     return this.sortMenuItems(allMenuItems);
@@ -573,56 +598,47 @@ export class MongoStorage implements IStorage {
   async getMenuItemsByCategory(category: string): Promise<MenuItem[]> {
     console.log(`[Storage] Fetching items for category: ${category}`);
     try {
-      // 1. Check current DB ('bungle') for a direct collection match
-      let collection = this.db.collection(category) as Collection<MenuItem>;
-      let items = await collection.find({}).toArray();
-      
-      if (items.length > 0) {
-        console.log(`[Storage] Found ${items.length} items in bungle.${category}`);
-        return this.sortMenuItems(items.map(item => ({ ...item, category })));
-      }
-
-      // 1.1 Try matching with hyphens replaced by spaces or other common separators
-      const variations = [
-        category,
-        category.replace(/-/g, ' '),
-        category.replace(/-/g, '&'),
-        category.replace(/-/g, ' & '),
-        category.replace(/&/g, '-'),
-        category.replace(/ /g, '-')
-      ];
-
-      for (const variant of Array.from(new Set(variations))) {
-        if (variant === category) continue;
-        const variantColl = this.db.collection(variant) as Collection<MenuItem>;
-        const variantItems = await variantColl.find({}).toArray();
-        if (variantItems.length > 0) {
-          console.log(`[Storage] Found ${variantItems.length} items in bungle collection variation: ${variant}`);
-          return this.sortMenuItems(variantItems.map(item => ({ ...item, category: variant })));
-        }
-      }
-
-      // 2. Last-ditch search: Look for items with the category in THEIR name or description across bungle collections
-      const dbCollections = await this.db.listCollections().toArray();
+      // The admin app stores the category value on each item. Resolve a
+      // customer-facing route id (e.g. "soup") to every equivalent value
+      // found in menupage.categories (e.g. title "SOUP").
+      const categoryAliases = await this.getCategoryAliases(category);
+      const categoryPatterns = categoryAliases.map(value =>
+        new RegExp(`^${value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}$`, "i")
+      );
+      const query = { category: { $in: categoryPatterns } };
       const allMatches: MenuItem[] = [];
-      for (const collInfo of dbCollections) {
-        const coll = this.db.collection(collInfo.name) as Collection<MenuItem>;
-        const matches = await coll.find({
-          $or: [
-            { name: new RegExp(category.replace(/-/g, ' '), 'i') },
-            { description: new RegExp(category.replace(/-/g, ' '), 'i') }
-          ]
-        }).toArray();
-        if (matches.length > 0) allMatches.push(...matches.map(m => ({ ...m, category: collInfo.name })));
-      }
-      
-      if (allMatches.length > 0) return this.sortMenuItems(allMatches);
+      const dbCollections = await this.db.listCollections().toArray();
 
-      return [];
+      for (const collectionInfo of dbCollections) {
+        const matches = await this.db
+          .collection<MenuItem>(collectionInfo.name)
+          .find(query)
+          .toArray();
+        allMatches.push(...matches);
+      }
+
+      console.log(`[Storage] Found ${allMatches.length} items for category aliases: ${categoryAliases.join(", ")}`);
+      return this.sortMenuItems(allMatches);
     } catch (error) {
       console.error(`[Storage] Error fetching items for ${category}:`, error);
       return [];
     }
+  }
+
+  private async getCategoryAliases(category: string): Promise<string[]> {
+    const aliases = new Set<string>([category]);
+    const categories = await this.categoriesCollection.find({}).toArray();
+
+    const visit = (node: { id?: string; title?: string; subcategories?: MenuSubCategory[] }) => {
+      const values = [node.id, node.title].filter((value): value is string => Boolean(value?.trim()));
+      if (values.some(value => normalizeCategory(value) === normalizeCategory(category))) {
+        values.forEach(value => aliases.add(value));
+      }
+      (node.subcategories || []).forEach(visit);
+    };
+
+    categories.forEach(visit);
+    return Array.from(aliases);
   }
 
   async getMenuItem(id: string): Promise<MenuItem | undefined> {

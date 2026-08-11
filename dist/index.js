@@ -6,6 +6,12 @@ import { createServer } from "http";
 
 // server/storage.ts
 import { MongoClient, ObjectId } from "mongodb";
+function normalizeCategory(value) {
+  return value.trim().toLowerCase().replace(/&/g, " and ").replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "");
+}
+function categoryIdFor(title, fallback) {
+  return fallback && fallback.trim() || normalizeCategory(title);
+}
 var MongoStorage = class {
   client;
   db;
@@ -350,6 +356,9 @@ var MongoStorage = class {
   filterVisibleSubcats(subcats) {
     return subcats.filter((sub) => sub.visible !== false).map((sub) => ({
       ...sub,
+      // Category documents imported from the admin app may only contain a
+      // title. The customer menu needs an id to build its URL.
+      id: categoryIdFor(sub.title, sub.id),
       subcategories: this.filterVisibleSubcats(sub.subcategories || [])
     }));
   }
@@ -357,6 +366,9 @@ var MongoStorage = class {
     const all = await this.categoriesCollection.find({}).sort({ order: 1 }).toArray();
     return all.filter((cat) => cat.visible !== false).map((cat) => ({
       ...cat,
+      // Older category records do not have an id. The customer menu uses
+      // this value for routing, so derive one from the stored title.
+      id: categoryIdFor(cat.title, cat.id),
       subcategories: this.filterVisibleSubcats(cat.subcategories || [])
     }));
   }
@@ -437,9 +449,9 @@ var MongoStorage = class {
   }
   async getMenuItems() {
     const allMenuItems = [];
-    const collections = Array.from(this.categoryCollections.values());
-    for (const collection of collections) {
-      const items = await collection.find({}).toArray();
+    const collections = await this.db.listCollections().toArray();
+    for (const collectionInfo of collections) {
+      const items = await this.db.collection(collectionInfo.name).find({ category: { $exists: true } }).toArray();
       allMenuItems.push(...items);
     }
     return this.sortMenuItems(allMenuItems);
@@ -447,47 +459,36 @@ var MongoStorage = class {
   async getMenuItemsByCategory(category) {
     console.log(`[Storage] Fetching items for category: ${category}`);
     try {
-      let collection = this.db.collection(category);
-      let items = await collection.find({}).toArray();
-      if (items.length > 0) {
-        console.log(`[Storage] Found ${items.length} items in bungle.${category}`);
-        return this.sortMenuItems(items.map((item) => ({ ...item, category })));
-      }
-      const variations = [
-        category,
-        category.replace(/-/g, " "),
-        category.replace(/-/g, "&"),
-        category.replace(/-/g, " & "),
-        category.replace(/&/g, "-"),
-        category.replace(/ /g, "-")
-      ];
-      for (const variant of Array.from(new Set(variations))) {
-        if (variant === category) continue;
-        const variantColl = this.db.collection(variant);
-        const variantItems = await variantColl.find({}).toArray();
-        if (variantItems.length > 0) {
-          console.log(`[Storage] Found ${variantItems.length} items in bungle collection variation: ${variant}`);
-          return this.sortMenuItems(variantItems.map((item) => ({ ...item, category: variant })));
-        }
-      }
-      const dbCollections = await this.db.listCollections().toArray();
+      const categoryAliases = await this.getCategoryAliases(category);
+      const categoryPatterns = categoryAliases.map(
+        (value) => new RegExp(`^${value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}$`, "i")
+      );
+      const query = { category: { $in: categoryPatterns } };
       const allMatches = [];
-      for (const collInfo of dbCollections) {
-        const coll = this.db.collection(collInfo.name);
-        const matches = await coll.find({
-          $or: [
-            { name: new RegExp(category.replace(/-/g, " "), "i") },
-            { description: new RegExp(category.replace(/-/g, " "), "i") }
-          ]
-        }).toArray();
-        if (matches.length > 0) allMatches.push(...matches.map((m) => ({ ...m, category: collInfo.name })));
+      const dbCollections = await this.db.listCollections().toArray();
+      for (const collectionInfo of dbCollections) {
+        const matches = await this.db.collection(collectionInfo.name).find(query).toArray();
+        allMatches.push(...matches);
       }
-      if (allMatches.length > 0) return this.sortMenuItems(allMatches);
-      return [];
+      console.log(`[Storage] Found ${allMatches.length} items for category aliases: ${categoryAliases.join(", ")}`);
+      return this.sortMenuItems(allMatches);
     } catch (error) {
       console.error(`[Storage] Error fetching items for ${category}:`, error);
       return [];
     }
+  }
+  async getCategoryAliases(category) {
+    const aliases = /* @__PURE__ */ new Set([category]);
+    const categories = await this.categoriesCollection.find({}).toArray();
+    const visit = (node) => {
+      const values = [node.id, node.title].filter((value) => Boolean(value?.trim()));
+      if (values.some((value) => normalizeCategory(value) === normalizeCategory(category))) {
+        values.forEach((value) => aliases.add(value));
+      }
+      (node.subcategories || []).forEach(visit);
+    };
+    categories.forEach(visit);
+    return Array.from(aliases);
   }
   async getMenuItem(id) {
     const collections = Array.from(this.categoryCollections.values());
@@ -608,7 +609,43 @@ var MongoStorage = class {
     return await this.ordersCollection.find({}).sort({ createdAt: -1 }).toArray();
   }
   async getOrdersByPhone(phone) {
-    return await this.ordersCollection.find({ customerPhone: phone }).sort({ createdAt: -1 }).toArray();
+    const orders = await this.ordersCollection.find({ customerPhone: phone }).sort({ createdAt: -1 }).toArray();
+    const posOrdersCollection = this.posDb.collection("orders");
+    const pendingWithPosId = orders.filter(
+      (o) => o.status === "pending" && o.posOrderId
+    );
+    if (pendingWithPosId.length > 0) {
+      const posIds = pendingWithPosId.map((o) => o.posOrderId);
+      const posCompleted = await posOrdersCollection.find({ id: { $in: posIds }, status: "completed" }).project({ id: 1 }).toArray();
+      if (posCompleted.length > 0) {
+        const completedPosIds = new Set(posCompleted.map((p) => p.id));
+        await this.ordersCollection.updateMany(
+          { customerPhone: phone, status: "pending", posOrderId: { $in: Array.from(completedPosIds) } },
+          { $set: { status: "completed" } }
+        );
+        for (const order of orders) {
+          if (order.status === "pending" && completedPosIds.has(order.posOrderId)) {
+            order.status = "completed";
+          }
+        }
+      }
+    }
+    return orders;
+  }
+  async updateOrderStatus(id, status) {
+    const { ObjectId: ObjectId2 } = await import("mongodb");
+    let oid;
+    try {
+      oid = new ObjectId2(id);
+    } catch {
+      return null;
+    }
+    const updated = await this.ordersCollection.findOneAndUpdate(
+      { _id: oid },
+      { $set: { status } },
+      { returnDocument: "after" }
+    );
+    return updated ?? null;
   }
   async deleteCompletedOrdersByPhone(phone) {
     const result = await this.ordersCollection.deleteMany({
@@ -1111,6 +1148,21 @@ async function registerRoutes(app2) {
       res.json(settings);
     } catch (error) {
       res.status(500).json({ message: "Failed to fetch POS settings" });
+    }
+  });
+  app2.patch("/api/orders/:id/status", async (req, res) => {
+    try {
+      const { id } = req.params;
+      const { status } = req.body;
+      const validStatuses = ["pending", "confirmed", "preparing", "ready", "served", "completed", "cancelled"];
+      if (!validStatuses.includes(status)) {
+        return res.status(400).json({ message: "Invalid status" });
+      }
+      const updated = await storage.updateOrderStatus(id, status);
+      if (!updated) return res.status(404).json({ message: "Order not found" });
+      res.json(updated);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to update order status" });
     }
   });
   app2.delete("/api/orders/by-phone/:phone", async (req, res) => {
