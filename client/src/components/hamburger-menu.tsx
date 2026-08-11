@@ -2,6 +2,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { X, QrCode, Copy, Check, ExternalLink, Utensils, Users, ChevronDown, ChevronRight } from "lucide-react";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useTheme } from "@/contexts/ThemeContext";
+import { useCustomer } from "@/contexts/CustomerContext";
 import { useState } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
@@ -42,6 +43,7 @@ const TIME_SLOTS = [
 
 export function ReservationModal({ onClose }: { onClose: () => void }) {
   const { isDark } = useTheme();
+  const { customer } = useCustomer();
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
   const [date, setDate] = useState("");

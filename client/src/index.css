@@ -356,17 +356,18 @@
 .bb-header {
   background-color: #090B0B;
   background-image: none;
-  border-bottom: 1px solid rgba(200,150,10,0.18);
+  border-bottom: 0;
+  box-shadow: none !important;
 }
 
 [data-theme="light"] .bb-header {
   background-color: #090B0B;
-  border-bottom: 1px solid rgba(200,150,10,0.18);
+  border-bottom: 0;
 }
 
 [data-theme="dark"] .bb-header {
   background-color: #000000;
-  border-bottom: 1px solid rgba(228,155,29,0.2);
+  border-bottom: 0;
 }
 /* ── end Bung-le theme variables ─────────────────────────────── */
 

@@ -1219,38 +1219,38 @@ export default function MenuLanding() {
       <header
         className="bb-header sticky top-0 z-30 elegant-shadow"
       >
-        <div className="container mx-auto px-2 sm:px-4 pt-1 pb-2.5">
-          <div className="flex items-center w-full">
-            <div className="flex items-center flex-shrink-0" style={{ width: "44px" }}>
+        <div className="container mx-auto px-2 sm:px-4 py-1">
+          <div className="relative flex items-center w-full h-12">
+            <div className="flex items-center flex-shrink-0 z-10" style={{ width: "44px" }}>
               <Button
                 variant="ghost"
                 size="icon"
                 onClick={() => setLocation("/")}
                 className="hover:bg-transparent flex-shrink-0"
-                style={{ color: "#333333" }}
+                style={{ color: "#E8D8B4" }}
                 data-testid="button-back"
               >
                 <ArrowLeft className="h-5 w-5 sm:h-6 sm:w-6" />
               </Button>
             </div>
 
-            <div className="flex-1 flex justify-center items-center overflow-visible">
+            <div className="absolute inset-0 flex justify-center items-center pointer-events-none">
               <button
                 onClick={() => setLocation("/menu")}
-                className="hover:bg-transparent"
+                className="hover:bg-transparent pointer-events-auto"
                 aria-label="Go to home"
                 data-testid="button-logo-home"
               >
                 <img
                    src="/welcome-custom-logo.png"
                   alt="Bung-le"
-                  style={{ height: "68px", width: "68px", objectFit: "contain", display: "block", transform: "scale(1.45)", transformOrigin: "center", marginTop: "8px" }}
+                   style={{ height: "52px", width: "112px", objectFit: "contain", display: "block" }}
                   data-testid="img-logo"
                 />
               </button>
             </div>
 
-            <div className="flex justify-end items-center gap-1 flex-shrink-0">
+            <div className="ml-auto flex justify-end items-center gap-1 flex-shrink-0 z-10">
               {/* Profile / Favorites / Order */}
               <HeaderActions color="var(--bb-gold)" />
               {/* Hamburger */}
