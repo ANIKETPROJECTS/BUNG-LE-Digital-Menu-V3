@@ -1,5 +1,5 @@
 import { useLocation } from "wouter";
-import { User, ClipboardList } from "lucide-react";
+import { User } from "lucide-react";
 import { useOrder } from "@/contexts/OrderContext";
 import { useCustomer } from "@/contexts/CustomerContext";
 
@@ -26,7 +26,7 @@ export default function HeaderActions({ color = "var(--bb-gold)", size = "md" }:
           aria-label="My profile"
           data-testid="button-profile"
         >
-          <User className={iconSize} />
+          <img src="/user-icon.png" alt="" className={`${size === "sm" ? "h-5 w-5" : "h-6 w-6"} object-contain`} />
         </button>
       )}
       <button
@@ -36,7 +36,11 @@ export default function HeaderActions({ color = "var(--bb-gold)", size = "md" }:
         aria-label="Your order"
         data-testid="button-order"
       >
-        <ClipboardList className={iconSize} />
+        <img
+          src="/dinner-icon.png"
+          alt=""
+          className={`${size === "sm" ? "h-5 w-5" : "h-6 w-6"} object-contain`}
+        />
         {totalItems > 0 && (
           <span
             className="absolute -top-0.5 -right-0.5 min-w-[18px] h-[18px] rounded-full text-[10px] font-bold flex items-center justify-center px-0.5"

@@ -464,7 +464,7 @@ export default function CategorySelection() {
                 data-testid="button-logo-home"
               >
                 <img
-                  src="/bungle-logo.svg"
+                  src="/welcome-custom-logo.png"
                   alt="Bung-le"
                   style={{ height: "68px", width: "68px", objectFit: "contain", display: "block", transform: "scale(1.45)", transformOrigin: "center", marginTop: "8px" }}
                   data-testid="img-logo"
@@ -473,7 +473,7 @@ export default function CategorySelection() {
             </div>
 
             <div className="flex justify-end items-center gap-1 flex-shrink-0">
-              <HeaderActions color="#333333" />
+              <HeaderActions color="var(--bb-gold)" />
               <Button
                 variant="ghost"
                 size="icon"

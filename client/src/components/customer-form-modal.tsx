@@ -57,6 +57,11 @@ export default function CustomerFormModal({ onClose, onSubmit }: CustomerFormMod
         style={{ background: isDark ? "#111" : "#FDFAF4", border: "1.5px solid var(--bb-border)" }}
       >
         {/* Title */}
+        <img
+          src="/welcome-custom-logo.png"
+          alt="Bung-le"
+          className="mx-auto mb-3 h-16 w-40 object-contain"
+        />
         <h2
           className="text-lg font-bold uppercase tracking-wider mb-1 text-center"
           style={{ color: "var(--bb-gold)", fontFamily: "'DM Sans', sans-serif" }}

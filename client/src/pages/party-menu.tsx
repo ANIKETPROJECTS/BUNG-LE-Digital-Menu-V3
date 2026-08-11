@@ -257,7 +257,7 @@ export default function PartyMenu() {
           data-testid="button-logo-home"
         >
           <img
-            src="/bungle-logo.svg"
+            src="/welcome-custom-logo.png"
             alt="Bung-le"
             className="w-28 h-28 object-contain mb-2"
             data-testid="img-party-menu-logo"

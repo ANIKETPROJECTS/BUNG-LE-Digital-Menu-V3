@@ -301,7 +301,7 @@
 
 .bb-bg {
   background-color: var(--bb-bg);
-  background-image: url('/bg-pattern-new.png');
+  background-image: none;
   background-repeat: repeat;
   background-size: 1024px auto;
 }
@@ -318,21 +318,21 @@
 
 /* Welcome page — explore button: white panel, rich gold border */
 .btn-explore {
-  background: #FFFFFF;
-  border: 4px solid #C8960A;
-  color: #7A5000;
+  background: #17120A;
+  border: 3px solid #C8960A;
+  color: #E8D8B4;
   font-size: 18px;
   box-shadow: 0 4px 18px rgba(200,150,10,0.18);
 }
 
 .btn-explore:hover {
-  background: #FFFBF0;
+  background: #241B0B;
   box-shadow: 0 6px 24px rgba(200,150,10,0.28);
 }
 
 /* btn-icon inside explore button — override to dark gold on white */
 .btn-explore .btn-icon {
-  background-color: #C8960A !important;
+  background-color: #E49B1D !important;
 }
 
 /* Customer details form inputs — placeholder adapts to theme */
@@ -344,32 +344,23 @@
   color: rgba(255, 255, 255, 0.35);
 }
 
-/* Welcome page — social card: white panel, gold border */
-.social-card {
-  background: #FFFFFF;
-  border-radius: 20px;
-  border: 4px solid #C8960A;
-  padding: 20px 16px 16px;
-  box-shadow: 0 6px 32px rgba(200,150,10,0.14);
-}
-
 .social-card-label {
-  color: #8B6200;
+  color: #D8C28A;
 }
 
 .social-card-divider {
   background: rgba(200,150,10,0.28) !important;
 }
 
-/* Header: always white with a faint gold underline */
+/* Main menu follows the welcome screen's dark and gold palette. */
 .bb-header {
-  background-color: #FFFFFF;
+  background-color: #090B0B;
   background-image: none;
   border-bottom: 1px solid rgba(200,150,10,0.18);
 }
 
 [data-theme="light"] .bb-header {
-  background-color: #FFFFFF;
+  background-color: #090B0B;
   border-bottom: 1px solid rgba(200,150,10,0.18);
 }
 

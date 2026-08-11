@@ -664,7 +664,7 @@ function PartyMenuFullScreen({ open, onClose }: { open: boolean; onClose: () => 
             </button>
 
             <img
-              src="/bungle-logo.svg"
+                   src="/welcome-custom-logo.png"
               alt="Bung-le"
               className="w-28 h-28 object-contain mb-2"
               data-testid="img-party-menu-logo"
@@ -1242,7 +1242,7 @@ export default function MenuLanding() {
                 data-testid="button-logo-home"
               >
                 <img
-                  src="/bungle-logo.svg"
+                   src="/welcome-custom-logo.png"
                   alt="Bung-le"
                   style={{ height: "68px", width: "68px", objectFit: "contain", display: "block", transform: "scale(1.45)", transformOrigin: "center", marginTop: "8px" }}
                   data-testid="img-logo"
@@ -1252,14 +1252,14 @@ export default function MenuLanding() {
 
             <div className="flex justify-end items-center gap-1 flex-shrink-0">
               {/* Profile / Favorites / Order */}
-              <HeaderActions color="#333333" />
+              <HeaderActions color="var(--bb-gold)" />
               {/* Hamburger */}
               <Button
                 variant="ghost"
                 size="icon"
                 onClick={() => setShowHamburgerMenu(!showHamburgerMenu)}
                 className="hover:bg-transparent"
-                style={{ color: "#333333" }}
+                 style={{ color: "var(--bb-gold)" }}
                 data-testid="button-menu-toggle"
               >
                 {showHamburgerMenu ? (

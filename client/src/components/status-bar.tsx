@@ -53,18 +53,6 @@ export default function StatusBar() {
       }}
       data-testid="status-bar"
     >
-      <span className="text-[11px] sm:text-xs" style={{ color: "var(--bb-text-dim)" }}>
-        Table Status:{" "}
-        <span className="inline-flex items-center gap-1.5 align-middle">
-          <span
-            className="inline-block rounded-full"
-            style={{ width: 7, height: 7, background: color }}
-          />
-          <span className="font-semibold" style={{ color }}>
-            {label}
-          </span>
-        </span>
-      </span>
       {tableNumber && (
         <>
           <span style={{ color: "var(--bb-border)" }}>|</span>

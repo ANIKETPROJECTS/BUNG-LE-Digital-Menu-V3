@@ -416,6 +416,21 @@ export default function HamburgerMenu({
                 })}
               </div>
 
+              {customer && (
+                <button
+                  onClick={() => {
+                    onClose();
+                    window.location.href = "/profile";
+                  }}
+                  className="w-full flex items-center gap-3 rounded-2xl px-4 py-3 text-left"
+                  style={{ background: isDark ? "rgba(228,155,29,0.06)" : "#FFFFFF", border: "1px solid rgba(228,155,29,0.22)" }}
+                  data-testid="button-hamburger-profile"
+                >
+                  <img src="/user-icon.png" alt="" className="h-9 w-9 object-contain" />
+                  <span className="text-sm font-bold" style={{ color: "var(--bb-gold)" }}>My Profile</span>
+                </button>
+              )}
+
               {/* ── Divider ── */}
               <div className="flex items-center gap-3">
                 <div className="flex-1 h-px" style={{ background: "rgba(228,155,29,0.15)" }} />

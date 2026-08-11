@@ -13,7 +13,7 @@ const ThemeContext = createContext<ThemeContextType>({
 export function ThemeProvider({ children }: { children: ReactNode }) {
   const [isDark, setIsDark] = useState<boolean>(() => {
     try {
-      return localStorage.getItem("bb_theme") === "dark";
+      return localStorage.getItem("bb_theme") !== "light";
     } catch {
       return false;
     }
