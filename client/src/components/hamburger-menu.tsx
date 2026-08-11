@@ -1,5 +1,5 @@
 import { motion, AnimatePresence } from "framer-motion";
-import { X, QrCode, Copy, Check, ExternalLink, Utensils, Users, ChevronDown, ChevronRight } from "lucide-react";
+import { X, QrCode, Copy, Check, ExternalLink, Utensils, Users, UserRound, ChevronDown, ChevronRight } from "lucide-react";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useTheme } from "@/contexts/ThemeContext";
 import { useCustomer } from "@/contexts/CustomerContext";
@@ -317,6 +317,7 @@ export default function HamburgerMenu({
 }: HamburgerMenuProps) {
   const { t } = useLanguage();
   const { isDark } = useTheme();
+  const { customer } = useCustomer();
   const [copiedUpi, setCopiedUpi] = useState(false);
   const [showQr, setShowQr] = useState(false);
   const [showReservation, setShowReservation] = useState(false);
@@ -428,7 +429,7 @@ export default function HamburgerMenu({
                   style={{ background: isDark ? "rgba(228,155,29,0.06)" : "#FFFFFF", border: "1px solid rgba(228,155,29,0.22)" }}
                   data-testid="button-hamburger-profile"
                 >
-                  <img src="/user-icon.png" alt="" className="h-9 w-9 object-contain" />
+                  <UserRound className="h-8 w-8 text-[#E8D8B4]" strokeWidth={2.2} />
                   <span className="text-sm font-bold" style={{ color: "var(--bb-gold)" }}>My Profile</span>
                 </button>
               )}

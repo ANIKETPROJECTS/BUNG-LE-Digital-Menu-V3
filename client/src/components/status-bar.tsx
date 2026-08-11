@@ -44,11 +44,13 @@ export default function StatusBar() {
   const tableNumber = latest ? formatTableNumber(latest.tableId) : null;
   const floorId = latest?.floorId || null;
 
+  if (!tableNumber && !floorId) return null;
+
   return (
     <div
       className="flex items-center justify-center gap-3 sm:gap-5 flex-wrap px-3 py-1.5"
       style={{
-        borderBottom: "1px solid var(--bb-border)",
+        borderBottom: "0",
         background: isDark ? "#0a0a0a" : "#faf7f0",
       }}
       data-testid="status-bar"
