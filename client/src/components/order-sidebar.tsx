@@ -26,6 +26,17 @@ export default function OrderSidebar() {
   const [placing, setPlacing] = useState(false);
   const queryClient = useQueryClient();
   const [placed, setPlaced] = useState(false);
+  const [lastOrderTotals, setLastOrderTotals] = useState<{
+    subtotal: number;
+    taxAmount: number;
+    cgst: number;
+    sgst: number;
+    serviceChargeAmount: number;
+    total: number;
+    taxRate: number;
+    serviceChargeRate: number;
+    gstEnabled: boolean;
+  } | null>(null);
   const [note, setNote] = useState("");
   const [profileOpen, setProfileOpen] = useState(false);
 
@@ -108,6 +119,17 @@ export default function OrderSidebar() {
         body: JSON.stringify(body),
       });
       if (!res.ok) throw new Error("Failed to place order");
+      setLastOrderTotals({
+        subtotal,
+        taxAmount,
+        cgst,
+        sgst,
+        serviceChargeAmount,
+        total,
+        taxRate,
+        serviceChargeRate,
+        gstEnabled,
+      });
       setPlaced(true);
       setNote("");
       clearOrder();
@@ -456,7 +478,11 @@ export default function OrderSidebar() {
             </div>
 
             {/* Footer */}
-            {!placed && orderItems.length > 0 && (
+            {!placed && (orderItems.length > 0 || lastOrderTotals) && (() => {
+              const totals = orderItems.length > 0
+                ? { subtotal, taxAmount, cgst, sgst, serviceChargeAmount, total, taxRate, serviceChargeRate, gstEnabled }
+                : lastOrderTotals!;
+              return (
               <div
                 className="px-5 py-4 space-y-2"
                 style={{ borderTop: "1px solid var(--bb-border)" }}
@@ -464,32 +490,32 @@ export default function OrderSidebar() {
                 {/* Subtotal */}
                 <div className="flex justify-between items-center">
                   <span className="text-xs" style={{ color: "var(--bb-text-dim)" }}>Subtotal</span>
-                  <span className="text-xs font-medium" style={{ color: "var(--bb-text)" }}>₹{subtotal.toFixed(0)}</span>
+                  <span className="text-xs font-medium" style={{ color: "var(--bb-text)" }}>₹{totals.subtotal.toFixed(0)}</span>
                 </div>
                 {/* GST breakdown */}
-                {gstEnabled && taxAmount > 0 && (
+                {totals.gstEnabled && totals.taxAmount > 0 && (
                   <>
                     <div className="flex justify-between items-center">
                       <span className="text-xs" style={{ color: "var(--bb-text-dim)" }}>
-                        CGST ({(taxRate / 2).toFixed(1)}%)
+                        CGST ({(totals.taxRate / 2).toFixed(1)}%)
                       </span>
-                      <span className="text-xs" style={{ color: "var(--bb-text-dim)" }}>₹{cgst}</span>
+                      <span className="text-xs" style={{ color: "var(--bb-text-dim)" }}>₹{totals.cgst}</span>
                     </div>
                     <div className="flex justify-between items-center">
                       <span className="text-xs" style={{ color: "var(--bb-text-dim)" }}>
-                        SGST ({(taxRate / 2).toFixed(1)}%)
+                        SGST ({(totals.taxRate / 2).toFixed(1)}%)
                       </span>
-                      <span className="text-xs" style={{ color: "var(--bb-text-dim)" }}>₹{sgst}</span>
+                      <span className="text-xs" style={{ color: "var(--bb-text-dim)" }}>₹{totals.sgst}</span>
                     </div>
                   </>
                 )}
                 {/* Service Charge */}
-                {serviceChargeAmount > 0 && (
+                {totals.serviceChargeAmount > 0 && (
                   <div className="flex justify-between items-center">
                     <span className="text-xs" style={{ color: "var(--bb-text-dim)" }}>
-                      Service Charge ({serviceChargeRate}%)
+                      Service Charge ({totals.serviceChargeRate}%)
                     </span>
-                    <span className="text-xs" style={{ color: "var(--bb-text-dim)" }}>₹{serviceChargeAmount}</span>
+                    <span className="text-xs" style={{ color: "var(--bb-text-dim)" }}>₹{totals.serviceChargeAmount}</span>
                   </div>
                 )}
                 {/* Divider */}
@@ -501,7 +527,7 @@ export default function OrderSidebar() {
                     className="text-xl font-bold"
                     style={{ color: "var(--bb-gold)", fontFamily: "'DM Sans', sans-serif" }}
                   >
-                    ₹{total.toFixed(0)}
+                    ₹{totals.total.toFixed(0)}
                   </span>
                 </div>
                 <button
@@ -517,7 +543,8 @@ export default function OrderSidebar() {
                   {placing ? "Placing…" : "Place Order"}
                 </button>
               </div>
-            )}
+              );
+            })()}
           </motion.div>
         )}
       </AnimatePresence>
