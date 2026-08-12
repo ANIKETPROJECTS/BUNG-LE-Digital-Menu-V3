@@ -44,8 +44,6 @@ const TIME_SLOTS = [
 
 export function ReservationModal({ onClose }: { onClose: () => void }) {
   const { isDark } = useTheme();
-  const { customer } = useCustomer();
-  const access = useMenuAccess();
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
   const [date, setDate] = useState("");
@@ -320,6 +318,7 @@ export default function HamburgerMenu({
   const { t } = useLanguage();
   const { isDark } = useTheme();
   const { customer } = useCustomer();
+  const access = useMenuAccess();
   const [copiedUpi, setCopiedUpi] = useState(false);
   const [showQr, setShowQr] = useState(false);
   const [showReservation, setShowReservation] = useState(false);
