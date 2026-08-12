@@ -14,9 +14,9 @@ export default function CustomerGate() {
   const { customer, setCustomer, clearCustomer } = useCustomer();
   const access = useMenuAccess();
 
-  // A signed QR URL may start with the token itself (for example /ady34...),
-  // so access.enabled is also a menu-area signal.
-  const isMenuArea = access.enabled || location.startsWith("/menu") || location.startsWith("/partymenu");
+  // The QR token opens the welcome page first. Only show the customer form
+  // after Explore Our Menu navigates into the actual menu area.
+  const isMenuArea = location.startsWith("/menu") || location.startsWith("/partymenu");
   const shouldShow = isMenuArea && access.enabled && !customer;
 
   // A customer saved from a previous visit must not bypass the customer form
