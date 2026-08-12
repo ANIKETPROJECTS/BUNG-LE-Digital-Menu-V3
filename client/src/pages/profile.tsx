@@ -4,6 +4,7 @@ import { useQuery } from "@tanstack/react-query";
 import { ArrowLeft, User, ShoppingBag, DollarSign, TrendingUp, Calendar, Heart, ChevronDown, History, X } from "lucide-react";
 import { useCustomer } from "@/contexts/CustomerContext";
 import { useTheme } from "@/contexts/ThemeContext";
+import { useMenuAccess } from "@/contexts/MenuAccessContext";
 import { useFavorites } from "@/hooks/use-favorites";
 import type { Order } from "@shared/schema";
 
@@ -16,6 +17,7 @@ function parsePrice(price: string | number): number {
 export default function ProfilePage() {
   const [, setLocation] = useLocation();
   const { customer } = useCustomer();
+  const access = useMenuAccess();
   const { isDark } = useTheme();
   const [favoritesOpen, setFavoritesOpen] = useState(false);
 
@@ -43,12 +45,12 @@ export default function ProfilePage() {
   const pageBg = isDark ? "#0f0f0f" : "#FDFAF4";
 
   useEffect(() => {
-    if (!customer) {
+    if (!customer || !access.enabled || access.guest) {
       setLocation("/menu");
     }
-  }, [customer, setLocation]);
+  }, [customer, access.enabled, access.guest, setLocation]);
 
-  if (!customer) {
+  if (!customer || !access.enabled || access.guest) {
     return null;
   }
 
