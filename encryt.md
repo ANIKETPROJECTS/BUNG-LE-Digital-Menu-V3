@@ -1,54 +1,49 @@
-# QR table/floor token format
+# QR Table and Floor String Generator
 
-The menu uses a signed, URL-safe token so customers cannot change the table or
-floor by editing the URL. The server validates the signature with the
-`SESSION_SECRET` environment secret; that secret must never be put in the
-browser, QR code, or this document.
+Create a feature that asks the user for:
 
-## Token algorithm
+- Table name
+- Floor name
 
-1. Create a compact JSON payload:
+After the user submits both values, generate a URL-safe string that can be
+appended to the digital menu URL:
+
+```text
+https://bungle.atdigitalmenu.com/<generated-string>
+```
+
+The generated string must use the exact QR-token logic already expected by the
+digital menu:
+
+1. Create a JSON payload containing:
 
    ```json
-   {"tableName":"T1","floorName":"Ground Floor","v":1}
+   {
+     "tableName": "<table name>",
+     "floorName": "<floor name>",
+     "v": 1
+   }
    ```
 
-2. Encode the UTF-8 JSON bytes using base64url without padding. Call this
-   value `payload`.
-3. Calculate `HMAC-SHA256(payload, SESSION_SECRET)`.
-4. Encode the digest using base64url without padding. Call this `signature`.
-5. The QR suffix is:
+2. Encode the JSON payload as base64url without padding.
+3. Create an HMAC-SHA256 signature of the encoded payload using the server-side
+   `SESSION_SECRET`.
+4. Encode the signature as base64url without padding.
+5. Return the final string in this format:
 
    ```text
-   payload.signature
+   <encoded-payload>.<encoded-signature>
    ```
 
-   Example URL:
+The generator must perform signing on the server. Never expose
+`SESSION_SECRET` in browser code, frontend bundles, API responses, or generated
+files.
 
-   ```text
-   https://bungle.atdigitalmenu.com/<payload.signature>
-   ```
+The feature should display the generated full URL so the user can copy it and
+use it when creating a table/floor QR code. Optionally provide a QR image
+download for the generated URL.
 
-The application sends the suffix to `/api/qr-context/:token`, verifies the HMAC
-with a timing-safe comparison, and only then reads `tableName` and `floorName`.
-The payload is encoded, not encrypted; the signature provides authenticity and
-prevents tampering. Do not include personal information.
-
-## Generator feature prompt
-
-> Add an admin-only QR token generator. Provide text inputs for table name and
-> floor name plus a Generate button. Using the exact token algorithm in
-> `encryt.md`, create `{"tableName": tableName, "floorName": floorName, "v": 1}`,
-> base64url encode it without padding, sign that encoded payload with
-> HMAC-SHA256 using the server-side `SESSION_SECRET`, base64url encode the
-> digest without padding, and return `payload.signature`. Display the complete
-> URL by appending the token to `https://bungle.atdigitalmenu.com/` and provide
-> a QR-code download. Never expose `SESSION_SECRET` to client code or API
-> responses; token generation must happen on the server.
-
-## Guest mode
-
-Opening `/menu` or any URL without a valid signed suffix is guest mode. Guest
-mode displays the menu but does not show the customer form, profile/order
-controls, or add-to-order controls. A valid QR URL enables customer details,
-ordering, profile, and order history.
+The digital menu will validate the signature server-side and read the table and
+floor values only after successful validation. Do not use plain base64 without
+the HMAC signature, because users must not be able to modify the table or floor
+name by editing the URL.
