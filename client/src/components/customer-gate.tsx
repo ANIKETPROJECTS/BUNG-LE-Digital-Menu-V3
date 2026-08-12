@@ -23,14 +23,16 @@ export default function CustomerGate() {
   // for a newly scanned table QR code.
   useEffect(() => {
     if (!access.enabled || !access.token) return;
-    const activeTokenKey = "bungle_active_qr_token";
-    if (sessionStorage.getItem(activeTokenKey) !== access.token) {
-      sessionStorage.setItem(activeTokenKey, access.token);
+    const customerTokenKey = "bungle_customer_qr_token";
+    if (sessionStorage.getItem(customerTokenKey) !== access.token) {
       clearCustomer();
     }
   }, [access.enabled, access.token, clearCustomer]);
 
   const handleSubmit = async (name: string, phone: string) => {
+    if (access.token) {
+      sessionStorage.setItem("bungle_customer_qr_token", access.token);
+    }
     setCustomer({ name, phone });
     try {
       await fetch("/api/customers", {
