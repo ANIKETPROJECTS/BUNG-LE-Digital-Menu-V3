@@ -39,6 +39,7 @@ import FloatingButtons from "@/components/floating-buttons";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useTheme } from "@/contexts/ThemeContext";
 import { useOrder } from "@/contexts/OrderContext";
+import { useMenuAccess } from "@/contexts/MenuAccessContext";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 
@@ -1164,6 +1165,7 @@ export default function MenuLanding() {
   const { toast } = useToast();
   const { t } = useLanguage();
   const { isDark } = useTheme();
+  const access = useMenuAccess();
   useOrder();
   const [showCoupons, setShowCoupons] = useState(false);
 
@@ -1251,6 +1253,16 @@ export default function MenuLanding() {
             </div>
 
             <div className="ml-auto flex justify-end items-center gap-1 flex-shrink-0 z-10">
+              {access.enabled && (
+                <div
+                  className="flex flex-col items-end mr-1 text-[8px] sm:text-[9px] leading-tight tracking-wide max-w-[72px] truncate"
+                  style={{ color: "#E8D8B4" }}
+                  data-testid="qr-location"
+                >
+                  <span>{access.tableName}</span>
+                  <span>{access.floorName}</span>
+                </div>
+              )}
               {/* Profile / Favorites / Order */}
               <HeaderActions color="var(--bb-gold)" />
               {/* Hamburger */}
