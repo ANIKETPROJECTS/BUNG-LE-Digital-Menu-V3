@@ -9,13 +9,15 @@ export interface MenuAccess {
 }
 
 const MenuAccessContext = createContext<MenuAccess>({ enabled: false, guest: true });
+const QR_SESSION_TOKEN_KEY = "bungle_qr_session_token";
 
 function getToken() {
   const firstSegment = window.location.pathname.split("/").filter(Boolean)[0];
   const queryToken = new URLSearchParams(window.location.search).get("access");
-  return queryToken || (firstSegment && firstSegment !== "menu" && firstSegment !== "profile" &&
+  const pathToken = firstSegment && firstSegment !== "menu" && firstSegment !== "profile" &&
     firstSegment !== "order-history" && firstSegment !== "partymenu"
-    ? firstSegment : null);
+    ? firstSegment : null;
+  return queryToken || pathToken || sessionStorage.getItem(QR_SESSION_TOKEN_KEY);
 }
 
 export function MenuAccessProvider({ children }: { children: ReactNode }) {
@@ -29,6 +31,7 @@ export function MenuAccessProvider({ children }: { children: ReactNode }) {
       .then((data) => {
         if (data) {
           const next = { enabled: true, guest: false, token, ...data };
+          sessionStorage.setItem(QR_SESSION_TOKEN_KEY, token);
           setAccess(next);
 
           // The token has completed its job once the server validates it.
