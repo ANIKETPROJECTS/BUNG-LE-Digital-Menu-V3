@@ -5,6 +5,7 @@ import { useTheme } from "@/contexts/ThemeContext";
 import { useCustomer } from "@/contexts/CustomerContext";
 import { useMenuAccess } from "@/contexts/MenuAccessContext";
 import { useState } from "react";
+import { useLocation } from "wouter";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import type { MenuCategory, PaymentDetails, RestaurantInfo, SocialLinks } from "@shared/schema";
@@ -315,6 +316,7 @@ export default function HamburgerMenu({
   onClose,
   onCategoryClick,
 }: HamburgerMenuProps) {
+  const [, setLocation] = useLocation();
   const { t } = useLanguage();
   const { isDark } = useTheme();
   const { customer } = useCustomer();
@@ -424,7 +426,7 @@ export default function HamburgerMenu({
                 <button
                   onClick={() => {
                     onClose();
-                    window.location.href = "/profile";
+                    setLocation("/profile");
                   }}
                   className="w-full flex items-center gap-3 rounded-2xl px-4 py-3 text-left"
                   style={{ background: isDark ? "rgba(228,155,29,0.06)" : "#FFFFFF", border: "1px solid rgba(228,155,29,0.22)" }}
