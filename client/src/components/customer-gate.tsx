@@ -22,12 +22,12 @@ export default function CustomerGate() {
   // A customer saved from a previous visit must not bypass the customer form
   // for a newly scanned table QR code.
   useEffect(() => {
-    if (!access.enabled || !access.token) return;
+    if (!isMenuArea || !access.enabled || !access.token) return;
     const customerTokenKey = "bungle_customer_qr_token";
     if (sessionStorage.getItem(customerTokenKey) !== access.token) {
       clearCustomer();
     }
-  }, [access.enabled, access.token, clearCustomer]);
+  }, [isMenuArea, access.enabled, access.token, clearCustomer]);
 
   const handleSubmit = async (name: string, phone: string) => {
     if (access.token) {
