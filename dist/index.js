@@ -694,6 +694,7 @@ var insertOrderSchema = z.object({
 });
 
 // server/routes.ts
+import crypto from "crypto";
 function getAdminToken() {
   return process.env.ADMIN_API_TOKEN || (process.env.NODE_ENV !== "production" ? "admin123" : "");
 }
@@ -702,6 +703,24 @@ function isAuthorizedAdmin(authHeader) {
   return Boolean(token && authHeader === `Bearer ${token}`);
 }
 async function registerRoutes(app2) {
+  app2.get("/api/qr-context/:token", (req, res) => {
+    try {
+      const secret = process.env.SESSION_SECRET;
+      if (!secret) return res.status(503).json({ message: "QR validation unavailable" });
+      const token = req.params.token;
+      const [encoded, signature] = token.split(".");
+      if (!encoded || !signature) return res.status(400).json({ message: "Invalid QR token" });
+      const expected = crypto.createHmac("sha256", secret).update(encoded).digest("base64url");
+      if (!crypto.timingSafeEqual(Buffer.from(signature), Buffer.from(expected))) {
+        return res.status(401).json({ message: "Invalid QR token" });
+      }
+      const payload = JSON.parse(Buffer.from(encoded, "base64url").toString("utf8"));
+      if (!payload.tableName || !payload.floorName) return res.status(400).json({ message: "Incomplete QR token" });
+      res.json({ tableName: String(payload.tableName), floorName: String(payload.floorName) });
+    } catch {
+      res.status(400).json({ message: "Invalid QR token" });
+    }
+  });
   app2.post("/api/customers", async (req, res) => {
     try {
       const validatedData = insertCustomerSchema.parse(req.body);

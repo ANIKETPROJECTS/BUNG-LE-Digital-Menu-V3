@@ -2,6 +2,7 @@ import { useLocation } from "wouter";
 import { AnimatePresence } from "framer-motion";
 import { useCustomer } from "@/contexts/CustomerContext";
 import CustomerFormModal from "@/components/customer-form-modal";
+import { useMenuAccess } from "@/contexts/MenuAccessContext";
 
 // Shows the "share your details" form the first time a customer lands on any
 // menu-related page (after tapping "Explore our menu"), rather than blocking
@@ -10,9 +11,12 @@ import CustomerFormModal from "@/components/customer-form-modal";
 export default function CustomerGate() {
   const [location] = useLocation();
   const { customer, setCustomer } = useCustomer();
+  const access = useMenuAccess();
 
-  const isMenuArea = location.startsWith("/menu") || location.startsWith("/partymenu");
-  const shouldShow = isMenuArea && !customer;
+  // A signed QR URL may start with the token itself (for example /ady34...),
+  // so access.enabled is also a menu-area signal.
+  const isMenuArea = access.enabled || location.startsWith("/menu") || location.startsWith("/partymenu");
+  const shouldShow = isMenuArea && access.enabled && !customer;
 
   const handleSubmit = async (name: string, phone: string) => {
     setCustomer({ name, phone });

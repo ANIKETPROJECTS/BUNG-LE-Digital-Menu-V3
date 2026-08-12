@@ -1,5 +1,6 @@
 import { ClipboardList } from "lucide-react";
 import { useOrder } from "@/contexts/OrderContext";
+import { useMenuAccess } from "@/contexts/MenuAccessContext";
 
 interface HeaderActionsProps {
   color?: string;
@@ -9,9 +10,11 @@ interface HeaderActionsProps {
 // Shared Profile / Favorites / Order icon cluster used across page headers.
 export default function HeaderActions({ color = "var(--bb-gold)", size = "md" }: HeaderActionsProps) {
   const { openSidebar, totalItems } = useOrder();
+  const access = useMenuAccess();
 
   return (
     <div className="flex items-center gap-2 sm:gap-3 flex-shrink-0">
+      {!access.guest && (
       <button
         onClick={openSidebar}
         className="relative flex items-center justify-center p-1.5"
@@ -29,6 +32,7 @@ export default function HeaderActions({ color = "var(--bb-gold)", size = "md" }:
           </span>
         )}
       </button>
+      )}
     </div>
   );
 }

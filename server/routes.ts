@@ -2,6 +2,7 @@ import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { insertCartItemSchema, insertCustomerSchema, updateMenuItemFlagsSchema, insertReservationSchema, insertOrderSchema, favoriteItemSchema } from "@shared/schema";
+import crypto from "crypto";
 
 function getAdminToken() {
   return process.env.ADMIN_API_TOKEN || (process.env.NODE_ENV !== "production" ? "admin123" : "");
@@ -13,6 +14,25 @@ function isAuthorizedAdmin(authHeader: string | undefined) {
 }
 
 export async function registerRoutes(app: Express): Promise<Server> {
+  // QR tokens are base64url(payload).base64url(HMAC-SHA256(payload)).
+  app.get("/api/qr-context/:token", (req, res) => {
+    try {
+      const secret = process.env.SESSION_SECRET;
+      if (!secret) return res.status(503).json({ message: "QR validation unavailable" });
+      const token = req.params.token;
+      const [encoded, signature] = token.split(".");
+      if (!encoded || !signature) return res.status(400).json({ message: "Invalid QR token" });
+      const expected = crypto.createHmac("sha256", secret).update(encoded).digest("base64url");
+      if (!crypto.timingSafeEqual(Buffer.from(signature), Buffer.from(expected))) {
+        return res.status(401).json({ message: "Invalid QR token" });
+      }
+      const payload = JSON.parse(Buffer.from(encoded, "base64url").toString("utf8"));
+      if (!payload.tableName || !payload.floorName) return res.status(400).json({ message: "Incomplete QR token" });
+      res.json({ tableName: String(payload.tableName), floorName: String(payload.floorName) });
+    } catch {
+      res.status(400).json({ message: "Invalid QR token" });
+    }
+  });
   // Customer routes
   app.post("/api/customers", async (req, res) => {
     try {

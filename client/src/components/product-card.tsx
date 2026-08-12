@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Plus, Minus, Heart, StickyNote } from "lucide-react";
 import type { MenuItem } from "@shared/schema";
 import { useOrder } from "@/contexts/OrderContext";
+import { useMenuAccess } from "@/contexts/MenuAccessContext";
 import { useFavorites } from "@/hooks/use-favorites";
 import ItemNoteModal from "@/components/item-note-modal";
 
@@ -133,6 +134,7 @@ export default function ProductCard({ item, onClick }: ProductCardProps) {
   const [imgError, setImgError] = useState(false);
   const [noteOpen, setNoteOpen] = useState(false);
   const { addToOrder, orderItems, updateQuantity, updateNote } = useOrder();
+  const access = useMenuAccess();
   const { isFavorite, toggleFavorite, hasCustomer } = useFavorites();
   const itemId = item._id?.toString() ?? "";
   const orderLine = orderItems.find(l => l.item._id?.toString() === itemId);
@@ -252,14 +254,14 @@ export default function ProductCard({ item, onClick }: ProductCardProps) {
           </span>
           {qty > 0 ? (
             <div className="flex items-center gap-1" onClick={e => e.stopPropagation()}>
-              <button
+              {!access.guest && <button
                 onClick={() => updateQuantity(itemId, qty - 1)}
                 className="w-7 h-7 rounded-full flex items-center justify-center transition-transform active:scale-90"
                 style={{ border: "1.5px solid var(--bb-gold)", color: "var(--bb-gold)" }}
                 aria-label="Decrease quantity"
               >
                 <Minus size={12} strokeWidth={2.5} />
-              </button>
+              </button>}
               <span
                 className="w-5 text-center text-sm font-bold"
                 style={{ color: "var(--bb-gold)", fontFamily: "'DM Sans', sans-serif" }}

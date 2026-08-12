@@ -19,12 +19,14 @@ import MocktailsCocktails from "@/pages/mocktails-cocktails";
 import PartyMenu from "@/pages/party-menu";
 import ProfilePage from "@/pages/profile";
 import OrderHistoryPage from "@/pages/order-history";
+import { MenuAccessProvider } from "@/contexts/MenuAccessContext";
 
 function Router() {
   return (
     <Switch>
       <Route path="/" component={Welcome} />
       <Route path="/menu" component={MenuLanding} />
+      <Route path="/:qrToken" component={MenuLanding} />
       <Route path="/menu/mocktails-cocktails" component={MocktailsCocktails} />
       <Route path="/menu/:category" component={CategorySelection} />
       <Route path="/menu/:category/:subcategory" component={SubcategoryProducts} />
@@ -46,7 +48,9 @@ function App() {
           <OrderProvider>
             <TooltipProvider>
               <Toaster />
-              <Router />
+              <MenuAccessProvider>
+                <Router />
+              </MenuAccessProvider>
               <OrderSidebar />
               <CustomerGate />
             </TooltipProvider>
