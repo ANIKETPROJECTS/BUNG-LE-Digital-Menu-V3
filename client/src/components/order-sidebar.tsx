@@ -4,6 +4,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { X, Minus, Plus, Trash2, CheckCircle, User, ChevronDown, ChevronUp, Clock, UtensilsCrossed, ClipboardList, StickyNote } from "lucide-react";
 import { useState } from "react";
 import { useTheme } from "@/contexts/ThemeContext";
+import { useMenuAccess } from "@/contexts/MenuAccessContext";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import type { Order } from "@shared/schema";
 import { formatTableNumber } from "@/lib/table";
@@ -20,6 +21,7 @@ export default function OrderSidebar() {
   const { orderItems, removeFromOrder, updateQuantity, updateNote, clearOrder, isOpen, closeSidebar } = useOrder();
   const [noteItemId, setNoteItemId] = useState<string | null>(null);
   const { customer } = useCustomer();
+  const access = useMenuAccess();
   const { isDark } = useTheme();
   const [placing, setPlacing] = useState(false);
   const queryClient = useQueryClient();
@@ -83,8 +85,8 @@ export default function OrderSidebar() {
     setPlacing(true);
     try {
       const body = {
-        tableId: "Table1",
-        floorId: "Ground Floor",
+        tableId: access.tableName || "Table1",
+        floorId: access.floorName || "Ground Floor",
         orderType: "dine-in",
         items: orderItems.map(l => ({
           name: l.item.name,
