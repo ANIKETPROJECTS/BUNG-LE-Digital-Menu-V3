@@ -50,9 +50,9 @@ function App() {
               <Toaster />
               <MenuAccessProvider>
                 <Router />
+                <CustomerGate />
               </MenuAccessProvider>
               <OrderSidebar />
-              <CustomerGate />
             </TooltipProvider>
           </OrderProvider>
           </CustomerProvider>
