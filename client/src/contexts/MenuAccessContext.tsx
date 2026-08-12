@@ -3,12 +3,13 @@ import { createContext, useContext, useEffect, useMemo, useState, type ReactNode
 export interface MenuAccess {
   enabled: boolean;
   guest: boolean;
+  loading: boolean;
   tableName?: string;
   floorName?: string;
   token?: string;
 }
 
-const MenuAccessContext = createContext<MenuAccess>({ enabled: false, guest: true });
+const MenuAccessContext = createContext<MenuAccess>({ enabled: false, guest: true, loading: false });
 const QR_SESSION_TOKEN_KEY = "bungle_qr_session_token";
 
 function getToken() {
@@ -22,15 +23,18 @@ function getToken() {
 
 export function MenuAccessProvider({ children }: { children: ReactNode }) {
   const token = getToken();
-  const [access, setAccess] = useState<MenuAccess>({ enabled: false, guest: true });
+  const [access, setAccess] = useState<MenuAccess>({ enabled: false, guest: true, loading: !!token });
 
   useEffect(() => {
-    if (!token) return;
+    if (!token) {
+      setAccess({ enabled: false, guest: true, loading: false });
+      return;
+    }
     fetch(`/api/qr-context/${encodeURIComponent(token)}`)
       .then((res) => res.ok ? res.json() : null)
       .then((data) => {
         if (data) {
-          const next = { enabled: true, guest: false, token, ...data };
+          const next = { enabled: true, guest: false, loading: false, token, ...data };
           sessionStorage.setItem(QR_SESSION_TOKEN_KEY, token);
           setAccess(next);
 
@@ -41,9 +45,11 @@ export function MenuAccessProvider({ children }: { children: ReactNode }) {
             ? "/"
             : window.location.pathname;
           window.history.replaceState({}, document.title, cleanPath);
+        } else {
+          setAccess({ enabled: false, guest: true, loading: false });
         }
       })
-      .catch(() => {});
+      .catch(() => setAccess({ enabled: false, guest: true, loading: false }));
   }, [token]);
 
   const value = useMemo(() => access, [access]);

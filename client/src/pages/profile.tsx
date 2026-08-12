@@ -45,12 +45,12 @@ export default function ProfilePage() {
   const pageBg = isDark ? "#0f0f0f" : "#FDFAF4";
 
   useEffect(() => {
-    if (!customer || !access.enabled || access.guest) {
+    if (!access.loading && (!customer || !access.enabled || access.guest)) {
       setLocation("/menu");
     }
-  }, [customer, access.enabled, access.guest, setLocation]);
+  }, [customer, access.loading, access.enabled, access.guest, setLocation]);
 
-  if (!customer || !access.enabled || access.guest) {
+  if (access.loading || !customer || !access.enabled || access.guest) {
     return null;
   }
 
