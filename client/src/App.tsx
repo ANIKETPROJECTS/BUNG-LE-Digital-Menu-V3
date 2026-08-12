@@ -26,7 +26,7 @@ function Router() {
     <Switch>
       <Route path="/" component={Welcome} />
       <Route path="/menu" component={MenuLanding} />
-      <Route path="/:qrToken" component={MenuLanding} />
+      <Route path="/:qrToken" component={Welcome} />
       <Route path="/menu/mocktails-cocktails" component={MocktailsCocktails} />
       <Route path="/menu/:category" component={CategorySelection} />
       <Route path="/menu/:category/:subcategory" component={SubcategoryProducts} />

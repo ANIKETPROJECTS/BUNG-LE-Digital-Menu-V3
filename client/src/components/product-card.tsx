@@ -172,7 +172,7 @@ export default function ProductCard({ item, onClick }: ProductCardProps) {
             item.isVeg ? 'bg-green-500 border-green-300' : 'bg-red-500 border-red-300'
           }`}
         />
-        {hasCustomer && (
+        {hasCustomer && !access.guest && (
           <button
             onClick={(e) => {
               e.stopPropagation();

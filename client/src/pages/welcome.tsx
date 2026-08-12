@@ -8,6 +8,7 @@ import { useWelcomeAudio } from "../hooks/useWelcomeAudio";
 import { MediaPreloader } from "../components/media-preloader";
 import { useState, useCallback } from "react";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { useMenuAccess } from "@/contexts/MenuAccessContext";
 import { motion } from "framer-motion";
 const welcomeLogo = "/welcome-custom-logo.png";
 const instaImg =
@@ -70,6 +71,7 @@ export default function Welcome() {
   const [mediaReady, setMediaReady] = useState(false);
   const [showReservation, setShowReservation] = useState(false);
   const { t, language } = useLanguage();
+  const access = useMenuAccess();
 
   const { data: linksData } = useQuery<SocialLinks>({
     queryKey: ["/api/social-links"],
@@ -87,7 +89,7 @@ export default function Welcome() {
   // before entering it — so tapping "Explore our menu" goes straight in.
   const handleExploreMenu = () => {
     playWelcomeAudio();
-    setLocation("/menu");
+    setLocation(access.token ? `/menu?access=${encodeURIComponent(access.token)}` : "/menu");
   };
 
   const handleSocialClick = useCallback((url: string) => {

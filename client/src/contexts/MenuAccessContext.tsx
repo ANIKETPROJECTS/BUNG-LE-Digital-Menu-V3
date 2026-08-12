@@ -12,10 +12,10 @@ const MenuAccessContext = createContext<MenuAccess>({ enabled: false, guest: tru
 
 function getToken() {
   const firstSegment = window.location.pathname.split("/").filter(Boolean)[0];
-  return firstSegment && firstSegment !== "menu" && firstSegment !== "profile" &&
+  const queryToken = new URLSearchParams(window.location.search).get("access");
+  return queryToken || (firstSegment && firstSegment !== "menu" && firstSegment !== "profile" &&
     firstSegment !== "order-history" && firstSegment !== "partymenu"
-    ? firstSegment
-    : null;
+    ? firstSegment : null);
 }
 
 export function MenuAccessProvider({ children }: { children: ReactNode }) {
