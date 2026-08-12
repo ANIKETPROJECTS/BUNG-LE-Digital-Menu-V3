@@ -154,7 +154,7 @@ export default function OrderSidebar() {
             animate={{ x: 0 }}
             exit={{ x: "100%" }}
             transition={{ type: "spring", stiffness: 300, damping: 30 }}
-            className="fixed top-0 right-0 h-full z-50 flex flex-col shadow-2xl"
+            className="fixed top-0 right-0 h-full min-h-0 z-50 flex flex-col shadow-2xl"
             style={{
               width: "min(380px, 100vw)",
               background: isDark ? "#0f0f0f" : "#FDFAF4",
@@ -336,15 +336,6 @@ export default function OrderSidebar() {
                       {order.note && (
                         <p className="text-xs italic" style={{ color: "var(--bb-text-dim)" }}>Note: {order.note}</p>
                       )}
-                      {/* Mark as Done */}
-                      <button
-                        onClick={() => markDoneMutation.mutate(order._id?.toString() ?? "")}
-                        disabled={markDoneMutation.isPending}
-                        className="w-full mt-1 py-1.5 rounded-lg text-xs font-bold uppercase tracking-wide transition-opacity"
-                        style={{ background: "#22c55e22", color: "#22c55e", border: "1px solid #22c55e55", opacity: markDoneMutation.isPending ? 0.6 : 1 }}
-                      >
-                        {markDoneMutation.isPending ? "Updating…" : "✓ Mark as Done"}
-                      </button>
                     </div>
                   ))}
                 </div>
@@ -352,7 +343,7 @@ export default function OrderSidebar() {
             })()}
 
             {/* Order items */}
-            <div className="flex-1 overflow-y-auto px-4 py-3 space-y-3">
+            <div className="flex-1 min-h-0 overflow-y-auto px-4 py-3 space-y-3">
               {placed ? (
                 <motion.div
                   initial={{ opacity: 0, scale: 0.8 }}
