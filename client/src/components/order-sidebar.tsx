@@ -28,7 +28,6 @@ export default function OrderSidebar() {
   const [placed, setPlaced] = useState(false);
   const [note, setNote] = useState("");
   const [profileOpen, setProfileOpen] = useState(false);
-  const [ongoingOrder, setOngoingOrder] = useState<{ items: { name: string; quantity: number; price: string | number }[]; total: number; note?: string; placedAt: Date } | null>(null);
 
   // Fetch POS settings (tax rate, service charge)
   const { data: posSettings } = useQuery<{ taxRate: number; serviceCharge: number; gstEnabled: boolean; gstNumber: string }>({
@@ -109,12 +108,6 @@ export default function OrderSidebar() {
         body: JSON.stringify(body),
       });
       if (!res.ok) throw new Error("Failed to place order");
-      setOngoingOrder({
-        items: orderItems.map(l => ({ name: l.item.name, quantity: l.quantity, price: l.item.price })),
-        total,
-        note: note.trim() || undefined,
-        placedAt: new Date(),
-      });
       setPlaced(true);
       setNote("");
       clearOrder();
@@ -362,54 +355,12 @@ export default function OrderSidebar() {
                   </p>
                 </motion.div>
               ) : orderItems.length === 0 ? (
-                ongoingOrder ? (
-                  <div className="space-y-3">
-                    {/* Ongoing order badge */}
-                    <div
-                      className="flex items-center gap-2 px-3 py-2 rounded-lg"
-                      style={{ background: isDark ? "#1a1a1a" : "#fff8ee", border: "1px solid var(--bb-gold)" }}
-                    >
-                      <CheckCircle size={15} style={{ color: "var(--bb-gold)", flexShrink: 0 }} />
-                      <div className="flex-1 min-w-0">
-                        <span className="text-xs font-bold uppercase tracking-wider" style={{ color: "var(--bb-gold)", fontFamily: "'DM Sans', sans-serif" }}>
-                          Current Order · ₹{ongoingOrder.total.toFixed(0)}
-                        </span>
-                        <p className="text-[10px]" style={{ color: "var(--bb-text-dim)" }}>
-                          Ordered at {ongoingOrder.placedAt.toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit" })}
-                        </p>
-                      </div>
-                    </div>
-                    {ongoingOrder.items.map((oi, i) => (
-                      <div
-                        key={i}
-                        className="flex items-start gap-3 rounded-xl p-3"
-                        style={{ background: isDark ? "#1a1a1a" : "#fff", border: "1px solid var(--bb-border)" }}
-                      >
-                        <div className="w-3 h-3 rounded-full flex-shrink-0 mt-0.5 bg-amber-400" />
-                        <div className="flex-1 min-w-0">
-                          <p className="text-sm font-semibold uppercase" style={{ color: "var(--bb-gold)", fontFamily: "'DM Sans', sans-serif", wordBreak: "break-word" }}>
-                            {oi.name}
-                          </p>
-                          <p className="text-xs" style={{ color: "var(--bb-text-dim)" }}>
-                            ×{oi.quantity} · ₹{(parsePrice(oi.price) * oi.quantity).toFixed(0)}
-                          </p>
-                        </div>
-                      </div>
-                    ))}
-                    {ongoingOrder.note && (
-                      <p className="text-xs italic px-1" style={{ color: "var(--bb-text-dim)" }}>
-                        Note: {ongoingOrder.note}
-                      </p>
-                    )}
-                  </div>
-                ) : (
-                  <div className="flex flex-col items-center justify-center h-full gap-3 opacity-50">
-                    <ClipboardList size={48} style={{ color: "var(--bb-gold)" }} />
-                    <p style={{ color: "var(--bb-text)", fontFamily: "'DM Sans', sans-serif" }}>
-                      No items added yet
-                    </p>
-                  </div>
-                )
+                <div className="flex flex-col items-center justify-center h-full gap-3 opacity-50">
+                  <ClipboardList size={48} style={{ color: "var(--bb-gold)" }} />
+                  <p style={{ color: "var(--bb-text)", fontFamily: "'DM Sans', sans-serif" }}>
+                    No items added yet
+                  </p>
+                </div>
               ) : (
                 orderItems.map(({ item, quantity, note: itemNote }) => {
                   const id = item._id?.toString() ?? "";
