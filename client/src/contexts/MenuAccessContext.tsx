@@ -30,6 +30,14 @@ export function MenuAccessProvider({ children }: { children: ReactNode }) {
         if (data) {
           const next = { enabled: true, guest: false, token, ...data };
           setAccess(next);
+
+          // The token has completed its job once the server validates it.
+          // Keep the validated context in memory for the current flow, but
+          // remove the token from the address bar so it is not exposed there.
+          const cleanPath = window.location.pathname === `/${token}`
+            ? "/"
+            : window.location.pathname;
+          window.history.replaceState({}, document.title, cleanPath);
         }
       })
       .catch(() => {});
