@@ -252,7 +252,7 @@ export default function ProductCard({ item, onClick }: ProductCardProps) {
               ? item.price.split("|").map(p => `₹${p.trim()}`).join(" | ")
               : `₹${item.price}`}
           </span>
-          {qty > 0 ? (
+          {!access.guest && (qty > 0 ? (
             <div className="flex items-center gap-1" onClick={e => e.stopPropagation()}>
               {!access.guest && <button
                 onClick={() => updateQuantity(itemId, qty - 1)}
@@ -310,7 +310,7 @@ export default function ProductCard({ item, onClick }: ProductCardProps) {
             >
               <Plus size={15} strokeWidth={2.5} />
             </button>
-          )}
+          ) )}
         </div>
       </div>
       {noteOpen && (

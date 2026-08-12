@@ -20,14 +20,7 @@ function getToken() {
 
 export function MenuAccessProvider({ children }: { children: ReactNode }) {
   const token = getToken();
-  const [access, setAccess] = useState<MenuAccess>(() => {
-    try {
-      const saved = sessionStorage.getItem("bungle_menu_access");
-      return saved ? JSON.parse(saved) : { enabled: false, guest: true };
-    } catch {
-      return { enabled: false, guest: true };
-    }
-  });
+  const [access, setAccess] = useState<MenuAccess>({ enabled: false, guest: true });
 
   useEffect(() => {
     if (!token) return;
@@ -36,7 +29,6 @@ export function MenuAccessProvider({ children }: { children: ReactNode }) {
       .then((data) => {
         if (data) {
           const next = { enabled: true, guest: false, token, ...data };
-          sessionStorage.setItem("bungle_menu_access", JSON.stringify(next));
           setAccess(next);
         }
       })
