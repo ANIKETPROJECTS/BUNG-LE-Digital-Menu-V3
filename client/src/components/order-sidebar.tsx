@@ -194,7 +194,7 @@ export default function OrderSidebar() {
                     className="text-sm font-bold uppercase tracking-widest"
                     style={{ color: "var(--bb-gold)", fontFamily: "'DM Sans', sans-serif" }}
                   >
-                    {formatTableNumber("Table1")}
+                    {access.tableName || "Table1"}
                   </span>
                 </div>
 
