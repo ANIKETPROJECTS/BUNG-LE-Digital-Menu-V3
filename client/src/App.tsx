@@ -51,8 +51,8 @@ function App() {
               <MenuAccessProvider>
                 <Router />
                 <CustomerGate />
+                <OrderSidebar />
               </MenuAccessProvider>
-              <OrderSidebar />
             </TooltipProvider>
           </OrderProvider>
           </CustomerProvider>
