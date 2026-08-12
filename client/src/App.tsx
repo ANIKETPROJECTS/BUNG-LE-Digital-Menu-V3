@@ -24,9 +24,7 @@ import { MenuAccessProvider } from "@/contexts/MenuAccessContext";
 function Router() {
   return (
     <Switch>
-      <Route path="/" component={Welcome} />
       <Route path="/menu" component={MenuLanding} />
-      <Route path="/:qrToken" component={Welcome} />
       <Route path="/menu/mocktails-cocktails" component={MocktailsCocktails} />
       <Route path="/menu/:category" component={CategorySelection} />
       <Route path="/menu/:category/:subcategory" component={SubcategoryProducts} />
@@ -34,6 +32,8 @@ function Router() {
       <Route path="/profile" component={ProfilePage} />
       <Route path="/order-history" component={OrderHistoryPage} />
       <Route path="/customers" component={CustomerList} />
+      <Route path="/" component={Welcome} />
+      <Route path="/:qrToken" component={Welcome} />
       <Route component={NotFound} />
     </Switch>
   );
