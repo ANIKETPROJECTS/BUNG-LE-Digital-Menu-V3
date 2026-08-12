@@ -378,13 +378,6 @@ export default function OrderSidebar() {
                           Ordered at {ongoingOrder.placedAt.toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit" })}
                         </p>
                       </div>
-                      <button
-                        className="ml-auto text-xs underline flex-shrink-0"
-                        style={{ color: "var(--bb-text-dim)" }}
-                        onClick={() => setOngoingOrder(null)}
-                      >
-                        Clear
-                      </button>
                     </div>
                     {ongoingOrder.items.map((oi, i) => (
                       <div
