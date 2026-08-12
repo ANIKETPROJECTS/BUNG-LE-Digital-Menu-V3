@@ -26,17 +26,6 @@ export default function OrderSidebar() {
   const [placing, setPlacing] = useState(false);
   const queryClient = useQueryClient();
   const [placed, setPlaced] = useState(false);
-  const [lastOrderTotals, setLastOrderTotals] = useState<{
-    subtotal: number;
-    taxAmount: number;
-    cgst: number;
-    sgst: number;
-    serviceChargeAmount: number;
-    total: number;
-    taxRate: number;
-    serviceChargeRate: number;
-    gstEnabled: boolean;
-  } | null>(null);
   const [note, setNote] = useState("");
   const [profileOpen, setProfileOpen] = useState(false);
 
@@ -119,17 +108,6 @@ export default function OrderSidebar() {
         body: JSON.stringify(body),
       });
       if (!res.ok) throw new Error("Failed to place order");
-      setLastOrderTotals({
-        subtotal,
-        taxAmount,
-        cgst,
-        sgst,
-        serviceChargeAmount,
-        total,
-        taxRate,
-        serviceChargeRate,
-        gstEnabled,
-      });
       setPlaced(true);
       setNote("");
       clearOrder();
@@ -298,7 +276,14 @@ export default function OrderSidebar() {
                   <p className="text-xs font-semibold uppercase tracking-wider" style={{ color: "#E49B1D" }}>
                     Ongoing Orders
                   </p>
-                  {ongoing.map(order => (
+                  {ongoing.map(order => {
+                    const orderSubtotal = order.items.reduce((sum, item) =>
+                      sum + parsePrice(item.price) * item.quantity, 0);
+                    const orderTax = gstEnabled ? Math.round(orderSubtotal * taxRate / 100) : 0;
+                    const orderCgst = Math.round(orderTax / 2);
+                    const orderSgst = orderTax - orderCgst;
+                    const orderService = Math.round(orderSubtotal * serviceChargeRate / 100);
+                    return (
                     <div
                       key={order._id?.toString()}
                       className="rounded-lg p-3 space-y-2"
@@ -351,8 +336,37 @@ export default function OrderSidebar() {
                       {order.note && (
                         <p className="text-xs italic" style={{ color: "var(--bb-text-dim)" }}>Note: {order.note}</p>
                       )}
+                      <div className="pt-2 mt-1 space-y-1" style={{ borderTop: "1px dashed var(--bb-border)" }}>
+                        <div className="flex justify-between text-[10px]">
+                          <span style={{ color: "var(--bb-text-dim)" }}>Subtotal</span>
+                          <span style={{ color: "var(--bb-text)" }}>₹{orderSubtotal.toFixed(0)}</span>
+                        </div>
+                        {gstEnabled && orderTax > 0 && (
+                          <>
+                            <div className="flex justify-between text-[10px]">
+                              <span style={{ color: "var(--bb-text-dim)" }}>CGST ({(taxRate / 2).toFixed(1)}%)</span>
+                              <span style={{ color: "var(--bb-text-dim)" }}>₹{orderCgst}</span>
+                            </div>
+                            <div className="flex justify-between text-[10px]">
+                              <span style={{ color: "var(--bb-text-dim)" }}>SGST ({(taxRate / 2).toFixed(1)}%)</span>
+                              <span style={{ color: "var(--bb-text-dim)" }}>₹{orderSgst}</span>
+                            </div>
+                          </>
+                        )}
+                        {orderService > 0 && (
+                          <div className="flex justify-between text-[10px]">
+                            <span style={{ color: "var(--bb-text-dim)" }}>Service Charge ({serviceChargeRate}%)</span>
+                            <span style={{ color: "var(--bb-text-dim)" }}>₹{orderService}</span>
+                          </div>
+                        )}
+                        <div className="flex justify-between pt-1 text-xs font-bold">
+                          <span style={{ color: "var(--bb-text)" }}>Grand Total</span>
+                          <span style={{ color: "var(--bb-gold)" }}>₹{order.total}</span>
+                        </div>
+                      </div>
                     </div>
-                  ))}
+                    );
+                  })}
                 </div>
               );
             })()}
@@ -478,10 +492,8 @@ export default function OrderSidebar() {
             </div>
 
             {/* Footer */}
-            {!placed && (orderItems.length > 0 || lastOrderTotals) && (() => {
-              const totals = orderItems.length > 0
-                ? { subtotal, taxAmount, cgst, sgst, serviceChargeAmount, total, taxRate, serviceChargeRate, gstEnabled }
-                : lastOrderTotals!;
+            {!placed && orderItems.length > 0 && (() => {
+              const totals = { subtotal, taxAmount, cgst, sgst, serviceChargeAmount, total, taxRate, serviceChargeRate, gstEnabled };
               return (
               <div
                 className="px-5 py-4 space-y-2"
