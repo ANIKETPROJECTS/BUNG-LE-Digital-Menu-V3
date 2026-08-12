@@ -89,7 +89,10 @@ export default function Welcome() {
   // before entering it — so tapping "Explore our menu" goes straight in.
   const handleExploreMenu = () => {
     playWelcomeAudio();
-    setLocation(access.token ? `/menu?access=${encodeURIComponent(access.token)}` : "/menu");
+    // The QR token has already been validated and cleaned from the URL.
+    // Keep navigation clean while MenuAccessProvider retains the session
+    // context in memory.
+    setLocation("/menu");
   };
 
   const handleSocialClick = useCallback((url: string) => {
