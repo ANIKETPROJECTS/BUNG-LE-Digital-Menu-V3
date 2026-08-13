@@ -81,7 +81,11 @@ export default function OrderSidebar() {
   const activeOrders = pastOrders.filter(o => {
     const todayStart = new Date();
     todayStart.setHours(0, 0, 0, 0);
-    return o.status !== "completed" && o.status !== "cancelled" && new Date(o.createdAt) >= todayStart;
+    return o.status !== "completed" &&
+      o.status !== "cancelled" &&
+      new Date(o.createdAt) >= todayStart &&
+      (!access.tableName || o.tableId === access.tableName) &&
+      (!access.floorName || o.floorId === access.floorName);
   });
   const hasOngoingOrders = activeOrders.length > 0;
   const ongoingSubtotal = activeOrders.reduce((sum, order) =>
@@ -280,7 +284,9 @@ export default function OrderSidebar() {
               const ongoing = pastOrders.filter(o =>
                 o.status !== "completed" &&
                 o.status !== "cancelled" &&
-                new Date(o.createdAt) >= todayStart
+                new Date(o.createdAt) >= todayStart &&
+                (!access.tableName || o.tableId === access.tableName) &&
+                (!access.floorName || o.floorId === access.floorName)
               );
               if (ongoing.length === 0) return null;
               return (
