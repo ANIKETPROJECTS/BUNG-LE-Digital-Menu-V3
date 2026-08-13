@@ -276,39 +276,25 @@ export default function OrderSidebar() {
                   <p className="text-xs font-semibold uppercase tracking-wider" style={{ color: "#E49B1D" }}>
                     Ongoing Orders
                   </p>
-                  {ongoing.map(order => {
-                    const orderSubtotal = order.items.reduce((sum, item) =>
+                  {(() => {
+                    const allItems = ongoing.flatMap(order => order.items);
+                    const orderSubtotal = allItems.reduce((sum, item) =>
                       sum + parsePrice(item.price) * item.quantity, 0);
                     const orderTax = gstEnabled ? Math.round(orderSubtotal * taxRate / 100) : 0;
                     const orderCgst = Math.round(orderTax / 2);
                     const orderSgst = orderTax - orderCgst;
                     const orderService = Math.round(orderSubtotal * serviceChargeRate / 100);
+                    const orderTotal = ongoing.reduce((sum, order) => sum + order.total, 0);
                     return (
                     <div
-                      key={order._id?.toString()}
+                      key="combined-ongoing-order"
                       className="rounded-lg p-3 space-y-2"
                       style={{ background: isDark ? "#1a1a1a" : "#fff", border: "1.5px solid #E49B1D" }}
                     >
-                      {/* Header row */}
-                      <div className="flex items-center justify-between gap-2 flex-wrap">
-                        <div className="flex items-center gap-1.5">
-                          <Clock size={11} style={{ color: "var(--bb-text-dim)", flexShrink: 0 }} />
-                          <span className="text-xs" style={{ color: "var(--bb-text-dim)" }}>
-                            {new Date(order.createdAt).toLocaleDateString("en-IN", {
-                              day: "numeric", month: "short", hour: "2-digit", minute: "2-digit",
-                            })}
-                          </span>
-                        </div>
-                        <div className="flex items-center gap-1.5">
-                          <span
-                            className="text-[10px] font-bold uppercase px-1.5 py-0.5 rounded-full"
-                            style={{ background: "#E49B1D22", color: "#E49B1D" }}
-                          >
-                            {order.status}
-                          </span>
-                          <span className="text-xs font-bold" style={{ color: "var(--bb-gold)" }}>₹{order.total}</span>
-                        </div>
-                      </div>
+                      {/* All active orders for this table share one card. */}
+                      <p className="text-xs" style={{ color: "var(--bb-text-dim)" }}>
+                        Table: <span className="font-semibold" style={{ color: "var(--bb-gold)" }}>{formatTableNumber(ongoing[0].tableId)}</span>
+                      </p>
                       {/* Items table */}
                       <div className="pt-1" style={{ borderTop: "1px solid var(--bb-border)" }}>
                         {/* Header */}
@@ -318,7 +304,7 @@ export default function OrderSidebar() {
                           <span className="text-right">Price</span>
                         </div>
                         {/* Rows */}
-                        {order.items.map((item, idx) => {
+                        {allItems.map((item, idx) => {
                           const unit = parsePrice(item.price);
                           return (
                             <div key={idx} className="grid text-xs py-0.5" style={{ gridTemplateColumns: "1fr auto auto", gap: "0 8px" }}>
@@ -329,13 +315,6 @@ export default function OrderSidebar() {
                           );
                         })}
                       </div>
-                      {/* Table */}
-                      <p className="text-xs" style={{ color: "var(--bb-text-dim)" }}>
-                        Table: <span className="font-semibold" style={{ color: "var(--bb-gold)" }}>{formatTableNumber(order.tableId)}</span>
-                      </p>
-                      {order.note && (
-                        <p className="text-xs italic" style={{ color: "var(--bb-text-dim)" }}>Note: {order.note}</p>
-                      )}
                       <div className="pt-2 mt-1 space-y-1" style={{ borderTop: "1px dashed var(--bb-border)" }}>
                         <div className="flex justify-between text-[10px]">
                           <span style={{ color: "var(--bb-text-dim)" }}>Subtotal</span>
@@ -361,12 +340,12 @@ export default function OrderSidebar() {
                         )}
                         <div className="flex justify-between pt-1 text-xs font-bold">
                           <span style={{ color: "var(--bb-text)" }}>Grand Total</span>
-                          <span style={{ color: "var(--bb-gold)" }}>₹{order.total}</span>
+                          <span style={{ color: "var(--bb-gold)" }}>₹{orderTotal}</span>
                         </div>
                       </div>
                     </div>
                     );
-                  })}
+                  })()}
                 </div>
               );
             })()}
