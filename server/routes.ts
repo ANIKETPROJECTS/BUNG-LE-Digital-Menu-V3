@@ -447,7 +447,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/orders", async (req, res) => {
     try {
       const validated = insertOrderSchema.parse(req.body);
-      const order = await storage.createOrder(validated);
+      const order = req.body.mergeExisting
+        ? await storage.addItemsToOngoingOrder(validated) ?? await storage.createOrder(validated)
+        : await storage.createOrder(validated);
       res.status(201).json(order);
     } catch (error) {
       res.status(400).json({ message: "Invalid order data" });

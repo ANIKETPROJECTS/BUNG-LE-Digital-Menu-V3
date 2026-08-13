@@ -674,6 +674,40 @@ export class MongoStorage implements IStorage {
     return { _id: result.insertedId, ...doc } as any;
   }
 
+  async addItemsToOngoingOrder(order: InsertOrder): Promise<Order | null> {
+    const filter: any = {
+      tableId: order.tableId,
+      floorId: order.floorId ?? "Ground Floor",
+      status: { $nin: ["completed", "cancelled"] },
+    };
+    if (order.customerPhone) filter.customerPhone = order.customerPhone;
+
+    const existing = await this.ordersCollection.findOne(filter, { sort: { createdAt: -1 } });
+    if (!existing) return null;
+
+    const items = [
+      ...(existing.items ?? []),
+      ...order.items.map(item => ({
+        ...item,
+        isVeg: item.isVeg ?? true,
+        notes: item.notes ?? null,
+      })),
+    ];
+    const updated = await this.ordersCollection.findOneAndUpdate(
+      { _id: existing._id },
+      {
+        $set: {
+          items,
+          total: (existing.total ?? 0) + order.total,
+          note: [existing.note, order.note].filter(Boolean).join(" | ") || undefined,
+          updatedAt: new Date(),
+        },
+      },
+      { returnDocument: "after" },
+    );
+    return updated as Order | null;
+  }
+
   async getOrders(): Promise<Order[]> {
     return await this.ordersCollection.find({}).sort({ createdAt: -1 }).toArray();
   }

@@ -115,6 +115,7 @@ export default function OrderSidebar() {
         paymentMode: null,
         ...(note.trim() ? { note: note.trim() } : {}),
         ...(customer ? { customerName: customer.name, customerPhone: customer.phone } : {}),
+        mergeExisting: hasOngoingOrders,
       };
       const res = await fetch("/api/orders", {
         method: "POST",

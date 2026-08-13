@@ -533,6 +533,37 @@ var MongoStorage = class {
     const result = await this.ordersCollection.insertOne(doc);
     return { _id: result.insertedId, ...doc };
   }
+  async addItemsToOngoingOrder(order) {
+    const filter = {
+      tableId: order.tableId,
+      floorId: order.floorId ?? "Ground Floor",
+      status: { $nin: ["completed", "cancelled"] }
+    };
+    if (order.customerPhone) filter.customerPhone = order.customerPhone;
+    const existing = await this.ordersCollection.findOne(filter, { sort: { createdAt: -1 } });
+    if (!existing) return null;
+    const items = [
+      ...existing.items ?? [],
+      ...order.items.map((item) => ({
+        ...item,
+        isVeg: item.isVeg ?? true,
+        notes: item.notes ?? null
+      }))
+    ];
+    const updated = await this.ordersCollection.findOneAndUpdate(
+      { _id: existing._id },
+      {
+        $set: {
+          items,
+          total: (existing.total ?? 0) + order.total,
+          note: [existing.note, order.note].filter(Boolean).join(" | ") || void 0,
+          updatedAt: /* @__PURE__ */ new Date()
+        }
+      },
+      { returnDocument: "after" }
+    );
+    return updated;
+  }
   async getOrders() {
     return await this.ordersCollection.find({}).sort({ createdAt: -1 }).toArray();
   }
@@ -1064,7 +1095,7 @@ async function registerRoutes(app2) {
   app2.post("/api/orders", async (req, res) => {
     try {
       const validated = insertOrderSchema.parse(req.body);
-      const order = await storage.createOrder(validated);
+      const order = req.body.mergeExisting ? await storage.addItemsToOngoingOrder(validated) ?? await storage.createOrder(validated) : await storage.createOrder(validated);
       res.status(201).json(order);
     } catch (error) {
       res.status(400).json({ message: "Invalid order data" });
