@@ -506,13 +506,15 @@ export default function OrderSidebar() {
             </div>
 
             {/* Footer */}
-            {!placed && orderItems.length > 0 && !hasOngoingOrders && (() => {
+            {!placed && orderItems.length > 0 && (() => {
               const totals = { subtotal, taxAmount, cgst, sgst, serviceChargeAmount, total, taxRate, serviceChargeRate, gstEnabled };
               return (
               <div
                 className="px-5 py-4 space-y-2"
                 style={{ borderTop: "1px solid var(--bb-border)" }}
               >
+                {!hasOngoingOrders && (
+                  <>
                 {/* Subtotal */}
                 <div className="flex justify-between items-center">
                   <span className="text-xs" style={{ color: "var(--bb-text-dim)" }}>Subtotal</span>
@@ -556,6 +558,8 @@ export default function OrderSidebar() {
                     ₹{totals.total.toFixed(0)}
                   </span>
                 </div>
+                  </>
+                )}
                 <button
                   onClick={handlePlaceOrder}
                   disabled={placing}
