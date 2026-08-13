@@ -283,11 +283,14 @@ export default function OrderSidebar() {
                   </p>
                   {(() => {
                     const allItems = [
-                      ...ongoing.flatMap(order => order.items),
+                      ...ongoing.flatMap(order => order.items.map(item => ({ ...item, isNew: false, id: undefined }))),
                       ...orderItems.map(line => ({
                         name: line.item.name,
                         price: line.item.price,
                         quantity: line.quantity,
+                        isNew: true,
+                        id: line.item._id?.toString() ?? "",
+                        note: line.note,
                       })),
                     ];
                     const orderSubtotal = allItems.reduce((sum, item) =>
@@ -319,9 +322,27 @@ export default function OrderSidebar() {
                         {allItems.map((item, idx) => {
                           const unit = parsePrice(item.price);
                           return (
-                            <div key={idx} className="grid text-xs py-0.5" style={{ gridTemplateColumns: "1fr auto auto", gap: "0 8px" }}>
+                            <div
+                              key={idx}
+                              className="grid text-xs py-1.5 items-center rounded-md px-1"
+                              style={{
+                                gridTemplateColumns: "1fr auto auto",
+                                gap: "0 8px",
+                                background: item.isNew ? (isDark ? "rgba(228,155,29,0.18)" : "rgba(228,155,29,0.16)") : "transparent",
+                                border: item.isNew ? "1px solid rgba(228,155,29,0.55)" : "1px solid transparent",
+                              }}
+                            >
                               <span style={{ color: "var(--bb-text)", wordBreak: "break-word", lineHeight: 1.3 }}>{item.name}</span>
-                              <span className="text-center font-medium flex-shrink-0" style={{ color: "var(--bb-text-dim)" }}>×{item.quantity}</span>
+                              {item.isNew ? (
+                                <div className="flex items-center gap-1">
+                                  <button onClick={() => updateQuantity(item.id!, item.quantity - 1)} className="w-5 h-5 rounded-full border flex items-center justify-center" style={{ borderColor: "var(--bb-border)", color: "var(--bb-gold)" }}><Minus size={10} /></button>
+                                  <span className="text-center font-medium w-4" style={{ color: "var(--bb-text-dim)" }}>{item.quantity}</span>
+                                  <button onClick={() => updateQuantity(item.id!, item.quantity + 1)} className="w-5 h-5 rounded-full border flex items-center justify-center" style={{ borderColor: "var(--bb-border)", color: "var(--bb-gold)" }}><Plus size={10} /></button>
+                                  <button onClick={() => setNoteItemId(item.id!)} className="w-5 h-5 rounded-full border flex items-center justify-center" style={{ borderColor: "var(--bb-border)", color: "var(--bb-gold)" }} title={item.note ? "Edit note" : "Add note"}><StickyNote size={10} /></button>
+                                </div>
+                              ) : (
+                                <span className="text-center font-medium flex-shrink-0" style={{ color: "var(--bb-text-dim)" }}>×{item.quantity}</span>
+                              )}
                               <span className="text-right font-semibold flex-shrink-0" style={{ color: "var(--bb-gold)" }}>₹{(unit * item.quantity).toFixed(0)}</span>
                             </div>
                           );
@@ -485,7 +506,7 @@ export default function OrderSidebar() {
             </div>
 
             {/* Footer */}
-            {!placed && orderItems.length > 0 && (() => {
+            {!placed && orderItems.length > 0 && !hasOngoingOrders && (() => {
               const totals = { subtotal, taxAmount, cgst, sgst, serviceChargeAmount, total, taxRate, serviceChargeRate, gstEnabled };
               return (
               <div
