@@ -78,11 +78,20 @@ export default function OrderSidebar() {
   const sgst = gstEnabled ? taxAmount - cgst : 0;
   const serviceChargeAmount = serviceChargeRate > 0 ? Math.round(subtotal * serviceChargeRate / 100) : 0;
   const total = subtotal + taxAmount + serviceChargeAmount;
-  const hasOngoingOrders = pastOrders.some(o => {
+  const activeOrders = pastOrders.filter(o => {
     const todayStart = new Date();
     todayStart.setHours(0, 0, 0, 0);
     return o.status !== "completed" && o.status !== "cancelled" && new Date(o.createdAt) >= todayStart;
   });
+  const hasOngoingOrders = activeOrders.length > 0;
+  const ongoingSubtotal = activeOrders.reduce((sum, order) =>
+    sum + order.items.reduce((orderSum, item) => orderSum + parsePrice(item.price) * item.quantity, 0), 0);
+  const combinedSubtotal = ongoingSubtotal + subtotal;
+  const combinedTaxAmount = gstEnabled ? Math.round(combinedSubtotal * taxRate / 100) : 0;
+  const combinedCgst = Math.round(combinedTaxAmount / 2);
+  const combinedSgst = combinedTaxAmount - combinedCgst;
+  const combinedServiceCharge = Math.round(combinedSubtotal * serviceChargeRate / 100);
+  const combinedTotal = activeOrders.reduce((sum, order) => sum + order.total, 0) + total;
 
   async function handlePlaceOrder() {
     if (orderItems.length === 0) return;
@@ -348,34 +357,6 @@ export default function OrderSidebar() {
                           );
                         })}
                       </div>
-                      <div className="pt-2 mt-1 space-y-1" style={{ borderTop: "1px dashed var(--bb-border)" }}>
-                        <div className="flex justify-between text-[10px]">
-                          <span style={{ color: "var(--bb-text-dim)" }}>Subtotal</span>
-                          <span style={{ color: "var(--bb-text)" }}>₹{orderSubtotal.toFixed(0)}</span>
-                        </div>
-                        {gstEnabled && orderTax > 0 && (
-                          <>
-                            <div className="flex justify-between text-[10px]">
-                              <span style={{ color: "var(--bb-text-dim)" }}>CGST ({(taxRate / 2).toFixed(1)}%)</span>
-                              <span style={{ color: "var(--bb-text-dim)" }}>₹{orderCgst}</span>
-                            </div>
-                            <div className="flex justify-between text-[10px]">
-                              <span style={{ color: "var(--bb-text-dim)" }}>SGST ({(taxRate / 2).toFixed(1)}%)</span>
-                              <span style={{ color: "var(--bb-text-dim)" }}>₹{orderSgst}</span>
-                            </div>
-                          </>
-                        )}
-                        {orderService > 0 && (
-                          <div className="flex justify-between text-[10px]">
-                            <span style={{ color: "var(--bb-text-dim)" }}>Service Charge ({serviceChargeRate}%)</span>
-                            <span style={{ color: "var(--bb-text-dim)" }}>₹{orderService}</span>
-                          </div>
-                        )}
-                        <div className="flex justify-between pt-1 text-xs font-bold">
-                          <span style={{ color: "var(--bb-text)" }}>Grand Total</span>
-                          <span style={{ color: "var(--bb-gold)" }}>₹{orderTotal}</span>
-                        </div>
-                      </div>
                     </div>
                     );
                   })()}
@@ -506,15 +487,15 @@ export default function OrderSidebar() {
             </div>
 
             {/* Footer */}
-            {!placed && orderItems.length > 0 && (() => {
-              const totals = { subtotal, taxAmount, cgst, sgst, serviceChargeAmount, total, taxRate, serviceChargeRate, gstEnabled };
+            {!placed && (orderItems.length > 0 || hasOngoingOrders) && (() => {
+              const totals = hasOngoingOrders
+                ? { subtotal: combinedSubtotal, taxAmount: combinedTaxAmount, cgst: combinedCgst, sgst: combinedSgst, serviceChargeAmount: combinedServiceCharge, total: combinedTotal, taxRate, serviceChargeRate, gstEnabled }
+                : { subtotal, taxAmount, cgst, sgst, serviceChargeAmount, total, taxRate, serviceChargeRate, gstEnabled };
               return (
               <div
                 className="px-5 py-4 space-y-2"
                 style={{ borderTop: "1px solid var(--bb-border)" }}
               >
-                {!hasOngoingOrders && (
-                  <>
                 {/* Subtotal */}
                 <div className="flex justify-between items-center">
                   <span className="text-xs" style={{ color: "var(--bb-text-dim)" }}>Subtotal</span>
@@ -558,8 +539,6 @@ export default function OrderSidebar() {
                     ₹{totals.total.toFixed(0)}
                   </span>
                 </div>
-                  </>
-                )}
                 <button
                   onClick={handlePlaceOrder}
                   disabled={placing}
