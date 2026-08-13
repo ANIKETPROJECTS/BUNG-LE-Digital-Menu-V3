@@ -536,18 +536,20 @@ export default function OrderSidebar() {
                     ₹{totals.total.toFixed(0)}
                   </span>
                 </div>
-                <button
-                  onClick={handlePlaceOrder}
-                  disabled={placing}
-                  className="w-full py-3 rounded-xl font-bold uppercase tracking-wider text-sm transition-opacity disabled:opacity-60"
-                  style={{
-                    background: "var(--bb-gold)",
-                    color: "#fff",
-                    fontFamily: "'DM Sans', sans-serif",
-                  }}
-                >
-                  {placing ? "Placing…" : "Place Order"}
-                </button>
+                {orderItems.length > 0 && (
+                  <button
+                    onClick={handlePlaceOrder}
+                    disabled={placing}
+                    className="w-full py-3 rounded-xl font-bold uppercase tracking-wider text-sm transition-opacity disabled:opacity-60"
+                    style={{
+                      background: "var(--bb-gold)",
+                      color: "#fff",
+                      fontFamily: "'DM Sans', sans-serif",
+                    }}
+                  >
+                    {placing ? "Placing…" : "Place Order"}
+                  </button>
+                )}
               </div>
               );
             })()}
