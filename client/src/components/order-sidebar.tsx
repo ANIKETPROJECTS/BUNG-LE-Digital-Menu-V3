@@ -316,9 +316,6 @@ export default function OrderSidebar() {
                       style={{ background: isDark ? "#1a1a1a" : "#fff", border: "1.5px solid #E49B1D" }}
                     >
                       {/* All active orders for this table share one card. */}
-                      <p className="text-xs" style={{ color: "var(--bb-text-dim)" }}>
-                        Table: <span className="font-semibold" style={{ color: "var(--bb-gold)" }}>{formatTableNumber(ongoing[0].tableId)}</span>
-                      </p>
                       {/* Items table */}
                       <div className="pt-1" style={{ borderTop: "1px solid var(--bb-border)" }}>
                         {/* Header */}
