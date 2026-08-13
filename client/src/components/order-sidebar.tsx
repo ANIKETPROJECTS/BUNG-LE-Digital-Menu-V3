@@ -78,6 +78,11 @@ export default function OrderSidebar() {
   const sgst = gstEnabled ? taxAmount - cgst : 0;
   const serviceChargeAmount = serviceChargeRate > 0 ? Math.round(subtotal * serviceChargeRate / 100) : 0;
   const total = subtotal + taxAmount + serviceChargeAmount;
+  const hasOngoingOrders = pastOrders.some(o => {
+    const todayStart = new Date();
+    todayStart.setHours(0, 0, 0, 0);
+    return o.status !== "completed" && o.status !== "cancelled" && new Date(o.createdAt) >= todayStart;
+  });
 
   async function handlePlaceOrder() {
     if (orderItems.length === 0) return;
@@ -277,14 +282,21 @@ export default function OrderSidebar() {
                     Ongoing Orders
                   </p>
                   {(() => {
-                    const allItems = ongoing.flatMap(order => order.items);
+                    const allItems = [
+                      ...ongoing.flatMap(order => order.items),
+                      ...orderItems.map(line => ({
+                        name: line.item.name,
+                        price: line.item.price,
+                        quantity: line.quantity,
+                      })),
+                    ];
                     const orderSubtotal = allItems.reduce((sum, item) =>
                       sum + parsePrice(item.price) * item.quantity, 0);
                     const orderTax = gstEnabled ? Math.round(orderSubtotal * taxRate / 100) : 0;
                     const orderCgst = Math.round(orderTax / 2);
                     const orderSgst = orderTax - orderCgst;
                     const orderService = Math.round(orderSubtotal * serviceChargeRate / 100);
-                    const orderTotal = ongoing.reduce((sum, order) => sum + order.total, 0);
+                    const orderTotal = ongoing.reduce((sum, order) => sum + order.total, 0) + total;
                     return (
                     <div
                       key="combined-ongoing-order"
@@ -369,6 +381,8 @@ export default function OrderSidebar() {
                     Your order has been sent to the kitchen.
                   </p>
                 </motion.div>
+              ) : hasOngoingOrders ? (
+                <div className="h-full" />
               ) : orderItems.length === 0 ? (
                 <div className="flex flex-col items-center justify-center h-full gap-3 opacity-50">
                   <ClipboardList size={48} style={{ color: "var(--bb-gold)" }} />
