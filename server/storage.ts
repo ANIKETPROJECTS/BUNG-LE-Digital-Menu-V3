@@ -73,6 +73,7 @@ export interface IStorage {
   createOrder(order: InsertOrder): Promise<Order>;
   getOrders(): Promise<Order[]>;
   getOrdersByPhone(phone: string): Promise<Order[]>;
+  getActiveOrdersByTable(tableId: string, floorId: string): Promise<Order[]>;
   updateOrderStatus(id: string, status: string): Promise<Order | null>;
   deleteCompletedOrdersByPhone(phone: string): Promise<number>;
 
@@ -680,8 +681,6 @@ export class MongoStorage implements IStorage {
       floorId: order.floorId ?? "Ground Floor",
       status: { $nin: ["completed", "cancelled"] },
     };
-    if (order.customerPhone) filter.customerPhone = order.customerPhone;
-
     const existing = await this.ordersCollection.findOne(filter, { sort: { createdAt: -1 } });
     if (!existing) return null;
 
@@ -748,6 +747,17 @@ export class MongoStorage implements IStorage {
     }
 
     return orders;
+  }
+
+  async getActiveOrdersByTable(tableId: string, floorId: string): Promise<Order[]> {
+    return await this.ordersCollection
+      .find({
+        tableId,
+        floorId,
+        status: { $nin: ["completed", "cancelled"] },
+      })
+      .sort({ createdAt: 1 })
+      .toArray();
   }
 
   async updateOrderStatus(id: string, status: string): Promise<Order | null> {

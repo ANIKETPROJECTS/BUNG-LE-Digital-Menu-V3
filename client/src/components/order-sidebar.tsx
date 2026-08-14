@@ -20,7 +20,7 @@ function parsePrice(price: string | number): number {
 export default function OrderSidebar() {
   const { orderItems, removeFromOrder, updateQuantity, updateNote, clearOrder, isOpen, closeSidebar } = useOrder();
   const [noteItemId, setNoteItemId] = useState<string | null>(null);
-  const { customer, clearCustomer } = useCustomer();
+  const { customer } = useCustomer();
   const access = useMenuAccess();
   const { isDark } = useTheme();
   const [placing, setPlacing] = useState(false);
@@ -69,6 +69,25 @@ export default function OrderSidebar() {
     gcTime: 0,
   });
 
+  const { data: tableOrders = [] } = useQuery<Order[]>({
+    queryKey: ["/api/orders/by-table", access.tableName, access.floorName],
+    queryFn: async () => {
+      if (!access.tableName) return [];
+      const params = new URLSearchParams({
+        tableId: access.tableName,
+        floorId: access.floorName || "Ground Floor",
+      });
+      const res = await fetch(`/api/orders/by-table?${params}`);
+      if (!res.ok) return [];
+      return res.json();
+    },
+    enabled: !!access.tableName,
+    staleTime: 0,
+    refetchInterval: 3000,
+    refetchOnWindowFocus: true,
+    gcTime: 0,
+  });
+
   const subtotal = orderItems.reduce((sum, l) => sum + parsePrice(l.item.price) * l.quantity, 0);
   const taxRate = posSettings?.taxRate ?? 0;
   const serviceChargeRate = posSettings?.serviceCharge ?? 0;
@@ -78,7 +97,7 @@ export default function OrderSidebar() {
   const sgst = gstEnabled ? taxAmount - cgst : 0;
   const serviceChargeAmount = serviceChargeRate > 0 ? Math.round(subtotal * serviceChargeRate / 100) : 0;
   const total = subtotal + taxAmount + serviceChargeAmount;
-  const activeOrders = pastOrders.filter(o => {
+  const activeOrders = tableOrders.filter(o => {
     const todayStart = new Date();
     todayStart.setHours(0, 0, 0, 0);
     return o.status !== "completed" &&
@@ -130,8 +149,6 @@ export default function OrderSidebar() {
       setPlaced(true);
       setNote("");
       clearOrder();
-      clearCustomer();
-      access.reset();
       setTimeout(() => {
         setPlaced(false);
       }, 2200);
@@ -283,7 +300,7 @@ export default function OrderSidebar() {
             {customer && (() => {
               const todayStart = new Date();
               todayStart.setHours(0, 0, 0, 0);
-              const ongoing = pastOrders.filter(o =>
+              const ongoing = tableOrders.filter(o =>
                 o.status !== "completed" &&
                 o.status !== "cancelled" &&
                 new Date(o.createdAt) >= todayStart &&

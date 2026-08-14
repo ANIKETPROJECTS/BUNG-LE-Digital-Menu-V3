@@ -476,6 +476,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Shared ongoing orders for everyone currently using the same table.
+  // This intentionally does not filter by customer phone: guests at one table
+  // must see the table's complete active order as it changes.
+  app.get("/api/orders/by-table", async (req, res) => {
+    try {
+      const tableId = String(req.query.tableId || "");
+      const floorId = String(req.query.floorId || "Ground Floor");
+      if (!tableId) return res.status(400).json({ message: "tableId is required" });
+      res.set("Cache-Control", "no-store");
+      res.json(await storage.getActiveOrdersByTable(tableId, floorId));
+    } catch {
+      res.status(500).json({ message: "Failed to fetch table orders" });
+    }
+  });
+
   // POS settings (tax rate, service charge)
   app.get("/api/pos-settings", async (req, res) => {
     try {
