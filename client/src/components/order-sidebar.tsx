@@ -20,7 +20,7 @@ function parsePrice(price: string | number): number {
 export default function OrderSidebar() {
   const { orderItems, removeFromOrder, updateQuantity, updateNote, clearOrder, isOpen, closeSidebar } = useOrder();
   const [noteItemId, setNoteItemId] = useState<string | null>(null);
-  const { customer } = useCustomer();
+  const { customer, clearCustomer } = useCustomer();
   const access = useMenuAccess();
   const { isDark } = useTheme();
   const [placing, setPlacing] = useState(false);
@@ -130,6 +130,8 @@ export default function OrderSidebar() {
       setPlaced(true);
       setNote("");
       clearOrder();
+      clearCustomer();
+      access.reset();
       setTimeout(() => {
         setPlaced(false);
       }, 2200);

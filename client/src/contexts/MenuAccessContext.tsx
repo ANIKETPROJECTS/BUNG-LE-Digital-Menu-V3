@@ -4,12 +4,13 @@ export interface MenuAccess {
   enabled: boolean;
   guest: boolean;
   loading: boolean;
+  reset: () => void;
   tableName?: string;
   floorName?: string;
   token?: string;
 }
 
-const MenuAccessContext = createContext<MenuAccess>({ enabled: false, guest: true, loading: false });
+const MenuAccessContext = createContext<MenuAccess>({ enabled: false, guest: true, loading: false, reset: () => {} });
 const QR_SESSION_TOKEN_KEY = "bungle_qr_session_token";
 
 function getToken() {
@@ -23,18 +24,23 @@ function getToken() {
 
 export function MenuAccessProvider({ children }: { children: ReactNode }) {
   const token = getToken();
-  const [access, setAccess] = useState<MenuAccess>({ enabled: false, guest: true, loading: !!token });
+  const [access, setAccess] = useState<MenuAccess>({ enabled: false, guest: true, loading: !!token, reset: () => {} });
+  const reset = () => {
+    sessionStorage.removeItem(QR_SESSION_TOKEN_KEY);
+    sessionStorage.removeItem("bungle_customer_qr_token");
+    setAccess({ enabled: false, guest: true, loading: false, reset });
+  };
 
   useEffect(() => {
     if (!token) {
-      setAccess({ enabled: false, guest: true, loading: false });
+      setAccess({ enabled: false, guest: true, loading: false, reset });
       return;
     }
     fetch(`/api/qr-context/${encodeURIComponent(token)}`)
       .then((res) => res.ok ? res.json() : null)
       .then((data) => {
         if (data) {
-          const next = { enabled: true, guest: false, loading: false, token, ...data };
+          const next = { enabled: true, guest: false, loading: false, reset, token, ...data };
           sessionStorage.setItem(QR_SESSION_TOKEN_KEY, token);
           setAccess(next);
 
@@ -46,10 +52,10 @@ export function MenuAccessProvider({ children }: { children: ReactNode }) {
             : window.location.pathname;
           window.history.replaceState({}, document.title, cleanPath);
         } else {
-          setAccess({ enabled: false, guest: true, loading: false });
+          setAccess({ enabled: false, guest: true, loading: false, reset });
         }
       })
-      .catch(() => setAccess({ enabled: false, guest: true, loading: false }));
+      .catch(() => setAccess({ enabled: false, guest: true, loading: false, reset }));
   }, [token]);
 
   const value = useMemo(() => access, [access]);
