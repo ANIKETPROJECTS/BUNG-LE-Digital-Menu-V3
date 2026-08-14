@@ -2,7 +2,7 @@ import { useOrder } from "@/contexts/OrderContext";
 import { useCustomer } from "@/contexts/CustomerContext";
 import { motion, AnimatePresence } from "framer-motion";
 import { X, Minus, Plus, Trash2, CheckCircle, User, ChevronDown, ChevronUp, Clock, UtensilsCrossed, ClipboardList, StickyNote } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useTheme } from "@/contexts/ThemeContext";
 import { useMenuAccess } from "@/contexts/MenuAccessContext";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -87,6 +87,26 @@ export default function OrderSidebar() {
     refetchOnWindowFocus: true,
     gcTime: 0,
   });
+
+  // A completed table order disappears from the shared active-order query.
+  // Only reset after this session has actually observed an order, so a fresh
+  // QR scan with an empty table is not immediately treated as expired.
+  const hadActiveTableOrder = useRef(false);
+  useEffect(() => {
+    if (!access.tableName) {
+      hadActiveTableOrder.current = false;
+      return;
+    }
+    if (tableOrders.length > 0) {
+      hadActiveTableOrder.current = true;
+      return;
+    }
+    if (hadActiveTableOrder.current) {
+      hadActiveTableOrder.current = false;
+      clearCustomer();
+      access.reset();
+    }
+  }, [tableOrders, access.tableName, clearCustomer, access.reset]);
 
   const subtotal = orderItems.reduce((sum, l) => sum + parsePrice(l.item.price) * l.quantity, 0);
   const taxRate = posSettings?.taxRate ?? 0;
