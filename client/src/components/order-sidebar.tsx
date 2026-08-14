@@ -104,9 +104,10 @@ export default function OrderSidebar() {
     if (hadActiveTableOrder.current) {
       hadActiveTableOrder.current = false;
       clearCustomer();
+      closeSidebar();
       access.reset();
     }
-  }, [tableOrders, access.tableName, clearCustomer, access.reset]);
+  }, [tableOrders, access.tableName, clearCustomer, closeSidebar, access.reset]);
 
   const subtotal = orderItems.reduce((sum, l) => sum + parsePrice(l.item.price) * l.quantity, 0);
   const taxRate = posSettings?.taxRate ?? 0;
