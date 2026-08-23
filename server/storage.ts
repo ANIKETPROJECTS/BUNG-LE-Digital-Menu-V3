@@ -788,6 +788,25 @@ export class MongoStorage implements IStorage {
       .sort({ createdAt: 1 })
       .toArray();
 
+    if (process.env.NODE_ENV !== "production") {
+      console.log("[TableOrderPoll] MongoDB matches", {
+        tableId,
+        floorId,
+        digitalOrders: digitalOrders.length,
+        posOrders: posOrders.length,
+        posSample: posOrders.slice(0, 3).map((order: any) => ({
+          tableId: order.tableId,
+          tableNumber: order.tableNumber,
+          table: order.table,
+          floorId: order.floorId,
+          floorName: order.floorName,
+          floor: order.floor,
+          status: order.status,
+          itemCount: Array.isArray(order.items) ? order.items.length : 0,
+        })),
+      });
+    }
+
     const normalizedPosOrders = posOrders.map((posOrder: any) => ({
       ...posOrder,
       tableId: posOrder.tableId ?? posOrder.tableNumber ?? posOrder.table,
