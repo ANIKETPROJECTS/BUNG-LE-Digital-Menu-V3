@@ -81,10 +81,13 @@ export default function OrderSidebar() {
       if (!res.ok) return [];
       return res.json();
     },
-    enabled: !!access.tableName,
+    enabled: access.enabled && !access.loading && !!access.tableName,
     staleTime: 0,
+    refetchOnMount: "always",
     refetchInterval: 3000,
+    refetchIntervalInBackground: true,
     refetchOnWindowFocus: true,
+    retry: 3,
     gcTime: 0,
   });
 
