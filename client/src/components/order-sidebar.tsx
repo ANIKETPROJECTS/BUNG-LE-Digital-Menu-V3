@@ -77,36 +77,14 @@ export default function OrderSidebar() {
         tableId: access.tableName,
         floorId: access.floorName || "Ground Floor",
       });
-      console.info("[TableOrderPoll] Checking ongoing order", {
-        tableId: access.tableName,
-        floorId: access.floorName || "Ground Floor",
-      });
       const res = await fetch(`/api/orders/by-table?${params}`);
-      if (!res.ok) {
-        console.warn("[TableOrderPoll] Check failed", {
-          status: res.status,
-          tableId: access.tableName,
-        });
-        return [];
-      }
-      const orders: Order[] = await res.json();
-      console.info("[TableOrderPoll] Check complete", {
-        tableId: access.tableName,
-        ongoingOrders: orders.length,
-        ongoingItems: orders.reduce(
-          (count, order) => count + (order.items?.reduce((sum, item) => sum + item.quantity, 0) ?? 0),
-          0,
-        ),
-      });
-      return orders;
+      if (!res.ok) return [];
+      return res.json();
     },
-    enabled: access.enabled && !access.loading && !!access.tableName,
+    enabled: !!access.tableName,
     staleTime: 0,
-    refetchOnMount: "always",
     refetchInterval: 3000,
-    refetchIntervalInBackground: true,
     refetchOnWindowFocus: true,
-    retry: 3,
     gcTime: 0,
   });
 
@@ -145,7 +123,9 @@ export default function OrderSidebar() {
     todayStart.setHours(0, 0, 0, 0);
     return o.status !== "completed" &&
       o.status !== "cancelled" &&
-      new Date(o.createdAt) >= todayStart;
+      new Date(o.createdAt) >= todayStart &&
+      (!access.tableName || o.tableId === access.tableName) &&
+      (!access.floorName || o.floorId === access.floorName);
   });
   const hasOngoingOrders = activeOrders.length > 0;
   const ongoingSubtotal = activeOrders.reduce((sum, order) =>
@@ -344,7 +324,9 @@ export default function OrderSidebar() {
               const ongoing = tableOrders.filter(o =>
                 o.status !== "completed" &&
                 o.status !== "cancelled" &&
-                new Date(o.createdAt) >= todayStart
+                new Date(o.createdAt) >= todayStart &&
+                (!access.tableName || o.tableId === access.tableName) &&
+                (!access.floorName || o.floorId === access.floorName)
               );
               if (ongoing.length === 0) return null;
               return (

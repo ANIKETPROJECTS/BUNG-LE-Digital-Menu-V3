@@ -676,12 +676,8 @@ export class MongoStorage implements IStorage {
   }
 
   async addItemsToOngoingOrder(order: InsertOrder): Promise<Order | null> {
-    const tableAliases = this.getTableAliases(order.tableId);
     const filter: any = {
-      $or: [
-        { tableId: { $in: tableAliases } },
-        { tableNumber: { $in: tableAliases } },
-      ],
+      tableId: order.tableId,
       floorId: order.floorId ?? "Ground Floor",
       status: { $nin: ["completed", "cancelled"] },
     };
@@ -754,70 +750,14 @@ export class MongoStorage implements IStorage {
   }
 
   async getActiveOrdersByTable(tableId: string, floorId: string): Promise<Order[]> {
-    const tableAliases = this.getTableAliases(tableId);
-    const digitalOrders = await this.ordersCollection
+    return await this.ordersCollection
       .find({
-        $or: [
-          { tableId: { $in: tableAliases } },
-          { tableNumber: { $in: tableAliases } },
-        ],
+        tableId,
         floorId,
         status: { $nin: ["completed", "cancelled"] },
       })
       .sort({ createdAt: 1 })
       .toArray();
-
-    // The POS application keeps its live orders in a separate database. Read
-    // those too so an order placed or changed at the till is visible here.
-    const floor = await this.posDb.collection<any>("floors").findOne({ name: floorId });
-    const posTables = await this.posDb.collection<any>("tables").find({
-      tableNumber: { $in: tableAliases },
-      ...(floor?.id ? { floorId: floor.id } : {}),
-    }).toArray();
-    const posTableIds = posTables.flatMap((table: any) => [table.id, table._id].filter(Boolean));
-
-    const posOrders = await this.posDb.collection<any>("orders")
-      .find({
-        tableId: { $in: posTableIds },
-        status: { $nin: ["completed", "cancelled"] },
-      })
-      .sort({ createdAt: 1 })
-      .toArray();
-    const posOrderIds = posOrders.flatMap((order: any) => [order.id, order._id].filter(Boolean));
-    const posItems = posOrderIds.length > 0
-      ? await this.posDb.collection<any>("orderItems").find({ orderId: { $in: posOrderIds } }).toArray()
-      : [];
-
-    const normalizedPosOrders = posOrders.map((posOrder: any) => ({
-      ...posOrder,
-      tableId,
-      tableNumber: tableId,
-      floorId,
-      orderType: posOrder.orderType ?? "dine-in",
-      paymentStatus: posOrder.paymentStatus ?? "pending",
-      items: (posItems.filter((item: any) =>
-        item.orderId === posOrder.id || String(item.orderId) === String(posOrder._id)
-      )).map((item: any) => ({
-        name: item.name ?? item.itemName ?? item.title ?? "",
-        price: item.price ?? item.unitPrice ?? item.rate ?? 0,
-        quantity: item.quantity ?? item.qty ?? 1,
-        category: item.category ?? "",
-        isVeg: item.isVeg ?? true,
-        notes: item.notes ?? item.note ?? null,
-      })),
-      total: posOrder.total ?? posOrder.grandTotal ?? posOrder.amount ?? 0,
-      createdAt: posOrder.createdAt ?? posOrder.orderDate ?? new Date(),
-    })) as Order[];
-
-    return [...digitalOrders, ...normalizedPosOrders]
-      .sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
-  }
-
-  private getTableAliases(tableId: string): string[] {
-    const raw = tableId.trim();
-    const number = raw.replace(/^table\s*/i, "").replace(/^t/i, "").trim();
-    if (!number) return [raw];
-    return Array.from(new Set([raw, `T${number}`, `Table${number}`, `TABLE${number}`]));
   }
 
   async updateOrderStatus(id: string, status: string): Promise<Order | null> {
