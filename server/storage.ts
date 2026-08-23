@@ -769,52 +769,35 @@ export class MongoStorage implements IStorage {
 
     // The POS application keeps its live orders in a separate database. Read
     // those too so an order placed or changed at the till is visible here.
+    const floor = await this.posDb.collection<any>("floors").findOne({ name: floorId });
+    const posTables = await this.posDb.collection<any>("tables").find({
+      tableNumber: { $in: tableAliases },
+      ...(floor?.id ? { floorId: floor.id } : {}),
+    }).toArray();
+    const posTableIds = posTables.flatMap((table: any) => [table.id, table._id].filter(Boolean));
+
     const posOrders = await this.posDb.collection<any>("orders")
       .find({
-        $and: [
-          { $or: [
-            { tableId: { $in: tableAliases } },
-            { tableNumber: { $in: tableAliases } },
-            { table: { $in: tableAliases } },
-          ] },
-          { $or: [
-            { floorId },
-            { floorName: floorId },
-            { floor: floorId },
-          ] },
-          { status: { $nin: ["completed", "cancelled"] } },
-        ],
+        tableId: { $in: posTableIds },
+        status: { $nin: ["completed", "cancelled"] },
       })
       .sort({ createdAt: 1 })
       .toArray();
-
-    if (process.env.NODE_ENV !== "production") {
-      console.log("[TableOrderPoll] MongoDB matches", {
-        tableId,
-        floorId,
-        digitalOrders: digitalOrders.length,
-        posOrders: posOrders.length,
-        posSample: posOrders.slice(0, 3).map((order: any) => ({
-          tableId: order.tableId,
-          tableNumber: order.tableNumber,
-          table: order.table,
-          floorId: order.floorId,
-          floorName: order.floorName,
-          floor: order.floor,
-          status: order.status,
-          itemCount: Array.isArray(order.items) ? order.items.length : 0,
-        })),
-      });
-    }
+    const posOrderIds = posOrders.flatMap((order: any) => [order.id, order._id].filter(Boolean));
+    const posItems = posOrderIds.length > 0
+      ? await this.posDb.collection<any>("orderItems").find({ orderId: { $in: posOrderIds } }).toArray()
+      : [];
 
     const normalizedPosOrders = posOrders.map((posOrder: any) => ({
       ...posOrder,
-      tableId: posOrder.tableId ?? posOrder.tableNumber ?? posOrder.table,
-      tableNumber: posOrder.tableNumber ?? posOrder.tableId ?? posOrder.table,
-      floorId: posOrder.floorId ?? posOrder.floorName ?? posOrder.floor ?? floorId,
+      tableId,
+      tableNumber: tableId,
+      floorId,
       orderType: posOrder.orderType ?? "dine-in",
       paymentStatus: posOrder.paymentStatus ?? "pending",
-      items: (posOrder.items ?? []).map((item: any) => ({
+      items: (posItems.filter((item: any) =>
+        item.orderId === posOrder.id || String(item.orderId) === String(posOrder._id)
+      )).map((item: any) => ({
         name: item.name ?? item.itemName ?? item.title ?? "",
         price: item.price ?? item.unitPrice ?? item.rate ?? 0,
         quantity: item.quantity ?? item.qty ?? 1,
