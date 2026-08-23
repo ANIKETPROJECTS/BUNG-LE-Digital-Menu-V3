@@ -676,8 +676,12 @@ export class MongoStorage implements IStorage {
   }
 
   async addItemsToOngoingOrder(order: InsertOrder): Promise<Order | null> {
+    const tableAliases = this.getTableAliases(order.tableId);
     const filter: any = {
-      tableId: order.tableId,
+      $or: [
+        { tableId: { $in: tableAliases } },
+        { tableNumber: { $in: tableAliases } },
+      ],
       floorId: order.floorId ?? "Ground Floor",
       status: { $nin: ["completed", "cancelled"] },
     };
@@ -752,12 +756,22 @@ export class MongoStorage implements IStorage {
   async getActiveOrdersByTable(tableId: string, floorId: string): Promise<Order[]> {
     return await this.ordersCollection
       .find({
-        tableId,
+        $or: [
+          { tableId: { $in: this.getTableAliases(tableId) } },
+          { tableNumber: { $in: this.getTableAliases(tableId) } },
+        ],
         floorId,
         status: { $nin: ["completed", "cancelled"] },
       })
       .sort({ createdAt: 1 })
       .toArray();
+  }
+
+  private getTableAliases(tableId: string): string[] {
+    const raw = tableId.trim();
+    const number = raw.replace(/^table\s*/i, "").replace(/^t/i, "").trim();
+    if (!number) return [raw];
+    return Array.from(new Set([raw, `T${number}`, `Table${number}`, `TABLE${number}`]));
   }
 
   async updateOrderStatus(id: string, status: string): Promise<Order | null> {
