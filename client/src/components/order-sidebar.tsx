@@ -28,6 +28,7 @@ export default function OrderSidebar() {
   const [placed, setPlaced] = useState(false);
   const [note, setNote] = useState("");
   const [profileOpen, setProfileOpen] = useState(false);
+  const [showCompletionNotice, setShowCompletionNotice] = useState(false);
 
   // Fetch POS settings (tax rate, service charge)
   const { data: posSettings } = useQuery<{ taxRate: number; serviceCharge: number; gstEnabled: boolean; gstNumber: string }>({
@@ -103,11 +104,10 @@ export default function OrderSidebar() {
     }
     if (hadActiveTableOrder.current) {
       hadActiveTableOrder.current = false;
-      clearCustomer();
       closeSidebar();
-      access.reset();
+      setShowCompletionNotice(true);
     }
-  }, [tableOrders, access.tableName, clearCustomer, closeSidebar, access.reset]);
+  }, [tableOrders, access.tableName, closeSidebar]);
 
   const subtotal = orderItems.reduce((sum, l) => sum + parsePrice(l.item.price) * l.quantity, 0);
   const taxRate = posSettings?.taxRate ?? 0;
@@ -136,6 +136,12 @@ export default function OrderSidebar() {
   const combinedSgst = combinedTaxAmount - combinedCgst;
   const combinedServiceCharge = Math.round(combinedSubtotal * serviceChargeRate / 100);
   const combinedTotal = activeOrders.reduce((sum, order) => sum + order.total, 0) + total;
+
+  function continueAsGuest() {
+    setShowCompletionNotice(false);
+    clearCustomer();
+    access.reset();
+  }
 
   async function handlePlaceOrder() {
     if (orderItems.length === 0) return;
@@ -615,6 +621,64 @@ export default function OrderSidebar() {
           />
         );
       })()}
+      <AnimatePresence>
+        {showCompletionNotice && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[70] flex items-center justify-center px-4"
+            style={{ background: "rgba(0,0,0,0.72)" }}
+          >
+            <motion.div
+              initial={{ opacity: 0, scale: 0.92, y: 12 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.92, y: 12 }}
+              transition={{ type: "spring", stiffness: 300, damping: 26 }}
+              role="dialog"
+              aria-modal="true"
+              aria-labelledby="order-completed-title"
+              className="w-full max-w-sm rounded-2xl p-6 text-center shadow-2xl"
+              style={{
+                background: isDark ? "#111" : "#FDFAF4",
+                border: "1.5px solid var(--bb-gold)",
+              }}
+            >
+              <div
+                className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full"
+                style={{ background: "rgba(228,155,29,0.16)" }}
+              >
+                <CheckCircle size={38} style={{ color: "var(--bb-gold)" }} />
+              </div>
+              <h2
+                id="order-completed-title"
+                className="text-xl font-bold uppercase tracking-wide"
+                style={{ color: "var(--bb-gold)", fontFamily: "'DM Sans', sans-serif" }}
+              >
+                Order Completed
+              </h2>
+              <p className="mt-3 text-sm leading-relaxed" style={{ color: "var(--bb-text)" }}>
+                Your order has been completed. You will receive your bill shortly.
+              </p>
+              <p className="mt-2 text-sm leading-relaxed" style={{ color: "var(--bb-text-dim)" }}>
+                The digital menu is now in guest mode, so you can continue browsing.
+                To order again, scan the QR code for your table.
+              </p>
+              <button
+                onClick={continueAsGuest}
+                className="mt-6 w-full rounded-xl py-3 text-sm font-bold uppercase tracking-wider"
+                style={{
+                  background: "var(--bb-gold)",
+                  color: "#fff",
+                  fontFamily: "'DM Sans', sans-serif",
+                }}
+              >
+                Continue Browsing
+              </button>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </>
   );
 }
