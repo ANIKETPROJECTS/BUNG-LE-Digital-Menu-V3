@@ -77,9 +77,28 @@ export default function OrderSidebar() {
         tableId: access.tableName,
         floorId: access.floorName || "Ground Floor",
       });
+      console.info("[TableOrderPoll] Checking ongoing order", {
+        tableId: access.tableName,
+        floorId: access.floorName || "Ground Floor",
+      });
       const res = await fetch(`/api/orders/by-table?${params}`);
-      if (!res.ok) return [];
-      return res.json();
+      if (!res.ok) {
+        console.warn("[TableOrderPoll] Check failed", {
+          status: res.status,
+          tableId: access.tableName,
+        });
+        return [];
+      }
+      const orders: Order[] = await res.json();
+      console.info("[TableOrderPoll] Check complete", {
+        tableId: access.tableName,
+        ongoingOrders: orders.length,
+        ongoingItems: orders.reduce(
+          (count, order) => count + (order.items?.reduce((sum, item) => sum + item.quantity, 0) ?? 0),
+          0,
+        ),
+      });
+      return orders;
     },
     enabled: access.enabled && !access.loading && !!access.tableName,
     staleTime: 0,
