@@ -754,17 +754,61 @@ export class MongoStorage implements IStorage {
   }
 
   async getActiveOrdersByTable(tableId: string, floorId: string): Promise<Order[]> {
-    return await this.ordersCollection
+    const tableAliases = this.getTableAliases(tableId);
+    const digitalOrders = await this.ordersCollection
       .find({
         $or: [
-          { tableId: { $in: this.getTableAliases(tableId) } },
-          { tableNumber: { $in: this.getTableAliases(tableId) } },
+          { tableId: { $in: tableAliases } },
+          { tableNumber: { $in: tableAliases } },
         ],
         floorId,
         status: { $nin: ["completed", "cancelled"] },
       })
       .sort({ createdAt: 1 })
       .toArray();
+
+    // The POS application keeps its live orders in a separate database. Read
+    // those too so an order placed or changed at the till is visible here.
+    const posOrders = await this.posDb.collection<any>("orders")
+      .find({
+        $and: [
+          { $or: [
+            { tableId: { $in: tableAliases } },
+            { tableNumber: { $in: tableAliases } },
+            { table: { $in: tableAliases } },
+          ] },
+          { $or: [
+            { floorId },
+            { floorName: floorId },
+            { floor: floorId },
+          ] },
+          { status: { $nin: ["completed", "cancelled"] } },
+        ],
+      })
+      .sort({ createdAt: 1 })
+      .toArray();
+
+    const normalizedPosOrders = posOrders.map((posOrder: any) => ({
+      ...posOrder,
+      tableId: posOrder.tableId ?? posOrder.tableNumber ?? posOrder.table,
+      tableNumber: posOrder.tableNumber ?? posOrder.tableId ?? posOrder.table,
+      floorId: posOrder.floorId ?? posOrder.floorName ?? posOrder.floor ?? floorId,
+      orderType: posOrder.orderType ?? "dine-in",
+      paymentStatus: posOrder.paymentStatus ?? "pending",
+      items: (posOrder.items ?? []).map((item: any) => ({
+        name: item.name ?? item.itemName ?? item.title ?? "",
+        price: item.price ?? item.unitPrice ?? item.rate ?? 0,
+        quantity: item.quantity ?? item.qty ?? 1,
+        category: item.category ?? "",
+        isVeg: item.isVeg ?? true,
+        notes: item.notes ?? item.note ?? null,
+      })),
+      total: posOrder.total ?? posOrder.grandTotal ?? posOrder.amount ?? 0,
+      createdAt: posOrder.createdAt ?? posOrder.orderDate ?? new Date(),
+    })) as Order[];
+
+    return [...digitalOrders, ...normalizedPosOrders]
+      .sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
   }
 
   private getTableAliases(tableId: string): string[] {
