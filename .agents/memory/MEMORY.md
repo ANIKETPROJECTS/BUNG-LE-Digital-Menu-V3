@@ -1,2 +1,1 @@
 - [Backend hot-reload behavior](backend-hot-reload.md) — tsx server needs manual restart; Vite HMR only covers frontend changes.
-- [POS menu availability](pos-menu-availability.md) — POS menuItems.available is the source for customer-facing item visibility.
