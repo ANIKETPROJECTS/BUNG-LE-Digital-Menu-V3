@@ -487,9 +487,9 @@ export class MongoStorage implements IStorage {
         .collection<MenuItem>(collectionInfo.name)
         .find({ category: { $exists: true } })
         .toArray();
-      allMenuItems.push(...items);
+      allMenuItems.push(...items.map(item => this.normalizeMenuItemAvailability(item)));
     }
-    return this.sortMenuItems(allMenuItems);
+    return this.sortMenuItems(await this.applyPosAvailability(allMenuItems));
   }
 
   async getMenuItemsByCategory(category: string): Promise<MenuItem[]> {
@@ -511,15 +511,70 @@ export class MongoStorage implements IStorage {
           .collection<MenuItem>(collectionInfo.name)
           .find(query)
           .toArray();
-        allMatches.push(...matches);
+        allMatches.push(...matches.map(item => this.normalizeMenuItemAvailability(item)));
       }
 
       console.log(`[Storage] Found ${allMatches.length} items for category aliases: ${categoryAliases.join(", ")}`);
-      return this.sortMenuItems(allMatches);
+      return this.sortMenuItems(await this.applyPosAvailability(allMatches));
     } catch (error) {
       console.error(`[Storage] Error fetching items for ${category}:`, error);
       return [];
     }
+  }
+
+  /**
+   * The POS/admin database has used both `available` and `isAvailable`.
+   * The customer menu uses `isAvailable`, so normalize the legacy field
+   * before data reaches the client. Missing availability means available.
+   */
+  private normalizeMenuItemAvailability(item: MenuItem): MenuItem {
+    const raw = item as MenuItem & { available?: boolean };
+    return {
+      ...item,
+      isAvailable: raw.isAvailable !== false && raw.available !== false,
+    };
+  }
+
+  /**
+   * The POS controls availability in POS.menuments.available, while the
+   * customer menu items are stored in bungle. Overlay the POS flag when a
+   * matching item exists so both applications share the same availability
+   * switch.
+   */
+  private async applyPosAvailability(items: MenuItem[]): Promise<MenuItem[]> {
+    // The POS collection is named `menuItems` (not the legacy
+    // `menuments` spelling shown in some older database screenshots).
+    const posItems = await this.posDb
+      .collection("menuItems")
+      .find({})
+      .project({ id: 1, name: 1, category: 1, available: 1, isAvailable: 1 })
+      .toArray();
+
+    const byId = new Map<string, any>();
+    const byNameAndCategory = new Map<string, any>();
+    for (const posItem of posItems) {
+      if (posItem.id) byId.set(String(posItem.id), posItem);
+      if (posItem.name) {
+        const key = `${normalizeCategory(String(posItem.category || ""))}|${String(posItem.name).trim().toLowerCase()}`;
+        byNameAndCategory.set(key, posItem);
+      }
+    }
+
+    return items.map(item => {
+      const raw = item as MenuItem & { available?: boolean; id?: string };
+      const key = `${normalizeCategory(String(raw.category || ""))}|${String(raw.name || "").trim().toLowerCase()}`;
+      const posItem = (raw.id && byId.get(String(raw.id))) || byNameAndCategory.get(key);
+      if (!posItem) return raw;
+
+      const posAvailable =
+        typeof posItem.available === "boolean"
+          ? posItem.available
+          : typeof posItem.isAvailable === "boolean"
+            ? posItem.isAvailable
+            : raw.isAvailable;
+
+      return { ...raw, isAvailable: posAvailable !== false };
+    });
   }
 
   private async getCategoryAliases(category: string): Promise<string[]> {
