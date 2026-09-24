@@ -8,6 +8,7 @@ import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import ProductCard from "@/components/product-card";
+import DishDetailModal from "@/components/dish-detail-modal";
 import HamburgerMenu from "@/components/hamburger-menu";
 import HeaderActions from "@/components/header-actions";
 import StatusBar from "@/components/status-bar";
@@ -249,6 +250,7 @@ export default function CategorySelection() {
   const params = useParams<{ category: string }>();
   const categoryId = params.category || "mocktails";
   const [showHamburgerMenu, setShowHamburgerMenu] = useState(false);
+  const [selectedDish, setSelectedDish] = useState<MenuItem | null>(null);
   const { t } = useLanguage();
   const { isDark } = useTheme();
   useOrder();
@@ -654,7 +656,7 @@ export default function CategorySelection() {
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: index * 0.05, duration: 0.3 }}
                   >
-                    <ProductCard item={item} />
+                    <ProductCard item={item} onClick={setSelectedDish} />
                   </motion.div>
                 ))}
               </div>
@@ -680,7 +682,7 @@ export default function CategorySelection() {
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: index * 0.05 }}
                 >
-                  <ProductCard item={item} />
+                  <ProductCard item={item} onClick={setSelectedDish} />
                 </motion.div>
               ))
             )}
@@ -747,6 +749,7 @@ export default function CategorySelection() {
           </div>
         )}
       </div>
+      <DishDetailModal item={selectedDish} onClose={() => setSelectedDish(null)} />
       <FloatingButtons isMenuOpen={showHamburgerMenu} />
     </div>
   );

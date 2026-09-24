@@ -9,6 +9,7 @@ import Lottie from "lottie-react";
 // @ts-ignore
 import panAnimation from "@assets/Animaed_pan_1773736045253.json";
 import DishCard from "@/components/dish-card";
+import DishDetailModal from "@/components/dish-detail-modal";
 import FloatingButtons from "@/components/floating-buttons";
 import HeaderActions from "@/components/header-actions";
 import StatusBar from "@/components/status-bar";
@@ -145,6 +146,7 @@ export default function CategoryDetail() {
     subcategories.length > 0 ? subcategories[0].id : ""
   );
   const [searchQuery, setSearchQuery] = useState("");
+  const [selectedDish, setSelectedDish] = useState<MenuItem | null>(null);
   const [isListening, setIsListening] = useState(false);
   const [speechRecognition, setSpeechRecognition] = useState<ISpeechRecognition | null>(null);
   const [voiceSearchSupported, setVoiceSearchSupported] = useState(false);
@@ -384,12 +386,13 @@ export default function CategoryDetail() {
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: index * 0.05, duration: 0.3 }}
               >
-                <DishCard item={item} />
+                <DishCard item={item} onClick={setSelectedDish} />
               </motion.div>
             ))}
           </div>
         )}
       </div>
+      <DishDetailModal item={selectedDish} onClose={() => setSelectedDish(null)} />
       <FloatingButtons />
     </div>
   );

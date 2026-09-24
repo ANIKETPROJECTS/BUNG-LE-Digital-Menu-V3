@@ -35,9 +35,10 @@ function getOverrideImage(name: string): string | null {
 
 interface DishCardProps {
   item: MenuItem;
+  onClick?: (item: MenuItem) => void;
 }
 
-export default function DishCard({ item }: DishCardProps) {
+export default function DishCard({ item, onClick }: DishCardProps) {
   const [imgError, setImgError] = useState(false);
   const override = getOverrideImage(item.name);
   const isPlaceholderImage = !item.image ||
@@ -54,12 +55,23 @@ export default function DishCard({ item }: DishCardProps) {
   return (
     <motion.div
       whileHover={{ y: -2, scale: 1.01 }}
-      className="overflow-hidden h-full flex flex-col transition-all duration-300"
+      className={`overflow-hidden h-full flex flex-col transition-all duration-300${onClick ? " cursor-pointer" : ""}`}
       style={{
         borderRadius: "10px",
         backgroundColor: "var(--bb-card)",
         border: "1px solid var(--bb-border)",
       }}
+      onClick={() => onClick?.(item)}
+      onKeyDown={event => {
+        if (onClick && (event.key === "Enter" || event.key === " ")) {
+          event.preventDefault();
+          onClick(item);
+        }
+      }}
+      role={onClick ? "button" : undefined}
+      tabIndex={onClick ? 0 : undefined}
+      aria-label={onClick ? `View details for ${item.name}` : undefined}
+      data-testid={`card-dish-${item._id?.toString()}`}
     >
       <div className="flex flex-col h-full">
         {/* Image */}
